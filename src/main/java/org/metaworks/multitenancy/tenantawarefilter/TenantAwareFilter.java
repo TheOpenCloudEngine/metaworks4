@@ -1,4 +1,4 @@
-package org.metaworks.multitenancy;
+package org.metaworks.multitenancy.tenantawarefilter;
 
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -17,7 +17,7 @@ import java.text.ParseException;
  * Created by uengine on 2017. 6. 12..
  */
 @WebFilter
-@Component
+//@Component
 public class TenantAwareFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {

@@ -189,6 +189,8 @@ Vue.component('object-grid', {
         },
 
         addRow: function (aRow) {
+            if(!this.rowData) this.rowData = [];
+
             this.rowData.push(aRow);
         },
 

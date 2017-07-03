@@ -4,7 +4,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.MetadataService;
-import org.metaworks.multitenancy.TenantAwareFilter;
+import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
