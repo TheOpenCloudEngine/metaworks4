@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vue-material@0.7.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.3/require.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vue-material@0.7.1/dist/vue-material.css">
+
+
+</head>
+<body>
+
+<script>
+
+    Vue.use(VueMaterial)
+
+</script>
+
+
+<script type="text/x-template" id="grid-template">
+    <table>
+        <thead>
+        <tr>
+            <th v-for="key in columns"
+                >
+                {{ key.displayName }}
+
+          </span>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="entry in filteredData">
+            <td v-for="key in columns">
+                {{entry[key.name]}}
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</script>
+
+<!-- demo root element -->
+<div id="demo-1">
+    <form id="search">
+        Search <input name="query" v-model="searchQuery">
+    </form>
+    <demo-grid ref="grid"
+            java="com.moornmo.ltms.Product"
+            :filter-key="searchQuery">
+    </demo-grid>
+
+    <button @click="$refs['grid'].addRow({prodName:'aaa'})">add</button>
+</div>
+
+<div id="demo">
+    <h1>Latest Vue.js Commits</h1>
+    <template v-for="branch in branches">
+        <input type="radio"
+               :id="branch"
+               :value="branch"
+               name="branch"
+               v-model="currentBranch">
+        <label :for="branch">{{ branch }}</label>
+    </template>
+    <p>vuejs/vue@{{ currentBranch }}</p>
+    <ul>
+        <li v-for="record in commits">
+            <a :href="record.html_url" target="_blank" class="commit">{{ record.sha.slice(0, 7) }}</a>
+            - <span class="message">{{ record.commit.message | truncate }}</span><br>
+            by <span class="author"><a :href="record.author.html_url" target="_blank">{{ record.commit.author.name }}</a></span>
+            at <span class="date">{{ record.commit.author.date | formatDate }}</span>
+        </li>
+    </ul>
+</div>
+
+<script>
+
+
+    Vue.component('demo-grid', {
+        template: '#grid-template',
+        props: {
+            java: String,
+            filterKey: String
+        },
+        data: function () {
+
+            var xhr = new XMLHttpRequest();
+            var columns = [];
+            var self = this;
+            xhr.open('GET', "http://localhost:8080/metadata?className=" + this.java, false);
+            xhr.onload = function () {
+                var metadata = JSON.parse(xhr.responseText)
+                columns = metadata.fieldDescriptors;
+
+                for(var i=0; i<columns.length; i++){
+                    var item = columns[i];
+
+                    if(item.attributes && item.attributes['hidden']){
+                        columns.splice(i, 1);
+                        i--;
+                    }else if(item.className == "long" || item.className == "java.lang.Long" || item.className == "java.lang.Integer"){
+                        item.type = "number";
+                    }else if(item.className == "java.util.Date" || item.className == "java.util.Calendar"){
+                        item.type = "date";
+                    }else if(item.className.indexOf('[L') == 0 && item.className.indexOf(";") > 1){
+                        item.component = "object-grid"
+                        item.elemClassName = item.className.substring(2, item.className.length - 1);
+
+                    }
+                }
+
+                if(self.columnChanger){
+                    self.columnChanger(columns);
+                }
+            }
+            xhr.send();
+
+
+            return {
+                rowData: [],
+                columns: columns
+            };
+        },
+
+        created: function(){
+
+
+            var pathElements = this.java.split(".");
+            var path = pathElements[pathElements.length-1].toLowerCase();
+            var xhr = new XMLHttpRequest()
+            var self = this
+
+            xhr.open('GET', "http://localhost:8080/" + path, false);
+
+            xhr.onload = function () {
+                var jsonData = JSON.parse(xhr.responseText)
+                self.rowData = jsonData._embedded[path];
+            }
+            xhr.send();
+
+        },
+        computed: {
+            filteredData: function () {
+                var data = this.rowData
+
+                return data
+            }
+        },
+        filters: {
+            capitalize: function (str) {
+                return str.charAt(0).toUpperCase() + str.slice(1)
+            }
+        },
+        methods: {
+            sortBy: function (key) {
+                this.sortKey = key
+                this.sortOrders[key] = this.sortOrders[key] * -1
+            },
+
+            addRow: function(aRow){
+               this.rowData.push(aRow);
+            }
+        }
+    })
+
+    // bootstrap the demo
+    var demo1 = new Vue({
+        el: '#demo-1',
+        data: {
+            searchQuery: '',
+            gridColumns: ['name', 'power'],
+
+        }
+    })
+
+    var apiURL = 'https://api.github.com/repos/vuejs/vue/commits?per_page=3&sha='
+
+    /**
+     * Actual demo
+     */
+
+    var demo = new Vue({
+
+        el: '#demo',
+
+        data: {
+            branches: ['master', 'dev'],
+            currentBranch: 'master',
+            commits: null
+        },
+
+        created: function () {
+            this.fetchData()
+        },
+
+        watch: {
+            currentBranch: 'fetchData'
+        },
+
+        filters: {
+            truncate: function (v) {
+                var newline = v.indexOf('\n')
+                return newline > 0 ? v.slice(0, newline) : v
+            },
+            formatDate: function (v) {
+                return v.replace(/T|Z/g, ' ')
+            }
+        },
+
+        methods: {
+            fetchData: function () {
+                var xhr = new XMLHttpRequest()
+                var self = this
+                xhr.open('GET', apiURL + self.currentBranch)
+                xhr.onload = function () {
+                    self.commits = JSON.parse(xhr.responseText)
+                    console.log(self.commits[0].html_url)
+                }
+                xhr.send()
+            }
+        }
+    });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,3 @@
+<md-select v-model="data[metadata.keyFieldDescriptor.name]">
+    <md-option v-for="entry in rowData" :value="keyValue(entry)">{{showLabel(entry)}}</md-option>
+</md-select>

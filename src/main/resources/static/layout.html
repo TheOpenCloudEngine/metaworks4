@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>통합디자인 관리 시스템
+    </title>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vue-material@0.7.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.3/require.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vue-material@0.7.1/dist/vue-material.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+</head>
+<body>
+
+<script>
+
+    Vue.use(VueMaterial)
+
+</script>
+
+
+<script src="object-grid.js"></script>
+<script src="object-form.js"></script>
+
+
+<div id="app">
+
+
+
+    <md-layout md-gutter>
+        <md-layout md-flex-xsmall="100" md-flex-small="50" md-flex-medium="33">
+            <md-table v-once>
+                <md-table-header>
+                    <md-table-row>
+                        <md-table-head>Dessert (100g serving)</md-table-head>
+                        <md-table-head md-numeric>Calories (g)</md-table-head>
+                        <md-table-head md-numeric>Fat (g)</md-table-head>
+                        <md-table-head md-numeric>Carbs (g)</md-table-head>
+                        <md-table-head md-numeric>Protein (g)</md-table-head>
+                    </md-table-row>
+                </md-table-header>
+
+                <md-table-body>
+                    <md-table-row v-for="(row, index) in 5" :key="index">
+                        <md-table-cell>Dessert Name</md-table-cell>
+                        <md-table-cell v-for="(col, index) in 4" :key="index" md-numeric>10</md-table-cell>
+                    </md-table-row>
+                </md-table-body>
+            </md-table>
+        </md-layout>
+
+        <md-layout md-flex-xsmall="100" md-flex-small="50" md-flex-medium="33">
+            <md-list>
+                <md-list-item>
+                    <md-icon>move_to_inbox</md-icon> <span>Inbox</span>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-icon>send</md-icon> <span>Sent Mail</span>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-icon>delete</md-icon> <span>Trash</span>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-icon>error</md-icon> <span>Spam</span>
+
+                    <md-divider class="md-inset"></md-divider>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-avatar>
+                        <img src="https://placeimg.com/40/40/people/5" alt="People">
+                    </md-avatar>
+
+                    <span>Abbey Christansen</span>
+
+                    <md-button class="md-icon-button md-list-action">
+                        <md-icon class="md-primary">chat_bubble</md-icon>
+                    </md-button>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-avatar>
+                        <img src="https://placeimg.com/40/40/people/1" alt="People">
+                    </md-avatar>
+
+                    <span>Alex Nelson</span>
+
+                    <md-button class="md-icon-button md-list-action">
+                        <md-icon class="md-primary">chat_bubble</md-icon>
+                    </md-button>
+                </md-list-item>
+
+                <md-list-item>
+                    <md-avatar>
+                        <img src="https://placeimg.com/40/40/people/6" alt="People">
+                    </md-avatar>
+
+                    <span>Mary Johnson</span>
+
+                    <md-button class="md-icon-button md-list-action">
+                        <md-icon>chat_bubble</md-icon>
+                    </md-button>
+                </md-list-item>
+            </md-list>
+        </md-layout>
+
+        <md-layout md-flex-xsmall="100" md-flex-small="50" md-flex-medium="33">
+
+
+            <md-tabs>
+                <md-tab id="movies" md-label="기본 정보">
+                    <md-input-container>
+                        <label>Single</label>
+                        <md-file v-model="single"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <md-file v-model="placeholder" placeholder="A nice input placeholder"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <md-file placeholder="Disabled" disabled></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <label>Initial Value</label>
+                        <md-file v-model="initialValue"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <label>Multiple</label>
+                        <md-file v-model="multiple" multiple></md-file>
+                    </md-input-container>
+                </md-tab>
+
+                <md-tab id="music" md-label="마케팅 표기">
+                    <md-input-container>
+                        <label>Single</label>
+                        <md-file v-model="single"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <md-file v-model="placeholder" placeholder="A nice input placeholder"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <md-file placeholder="Disabled" disabled></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <label>Initial Value</label>
+                        <md-file v-model="initialValue"></md-file>
+                    </md-input-container>
+
+                    <md-input-container>
+                        <label>Multiple</label>
+                        <md-file v-model="multiple" multiple></md-file>
+                    </md-input-container>                </md-tab>
+
+
+            </md-tabs>
+
+
+        </md-layout>
+
+
+    </md-layout>
+
+
+<script>
+
+    var app = new Vue({
+        el: '#app',
+
+    })
+
+
+</script>
+
+
+
+
+
+
+</body>
+</html>
