@@ -123,6 +123,8 @@ public class DefaultMetadataService implements MetadataService {
 
         }catch (FileNotFoundException fne){
 
+        }catch (NullPointerException npe){
+
         }
 
         return classDefinition;
