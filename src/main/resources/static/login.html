@@ -33,30 +33,8 @@
             <md-card>
 
 
-                <md-card-header>
-                    <div class="md-title">Login</div>
-                    <div class="md-subhead">Please Login</div>
-                </md-card-header>
-                <md-card-content>
 
-                    <form novalidate @submit.stop.prevent="submit">
-                        <md-input-container>
-                            <label>E-Mail</label>
-                            <md-input v-model="id"></md-input>
-                        </md-input-container>
-
-                        <md-input-container md-has-password>
-                            <label>Password</label>
-                            <md-input v-model="password" type="password"></md-input>
-                        </md-input-container>
-                    </form>
-                </md-card-content>
-
-
-                <md-card-actions>
-                    <md-button class="md-primary" @click.native="login()">로그인</md-button>
-                </md-card-actions>
-
+                <iam-login iam-server="http://iam.uengine.io:8080"></iam-login>
 
             </md-card>
         </md-layout>
@@ -70,35 +48,6 @@
 
     var app = new Vue({
         el: '#app',
-        data: {
-            id: '',
-            password: ''
-        },
-
-        methods: {
-           login: function (){
-                //alert(this.id);
-
-               var me = this;
-
-               var iam = new IAM('http://iam.uengine.io:8080');
-               iam.setDefaultClient('e74a9505-a811-407f-b4f6-129b7af1c703','109cf590-ac67-4b8c-912a-913373ada046');
-               iam.passwordCredentialsLogin(this.id,this.password,'uEngineSubscriptions/subscriptionsapi','JWT')
-                   .done(function(response){
-                       console.log(response);
-
-                       localStorage['access_token'] = response['access_token'];
-                       localStorage['username'] = me.id;
-
-                       var tenant = me.id.split("@")[1];
-                       tenant = tenant.split(".")[0];
-                       localStorage['tenant'] = tenant;
-
-                       window.location = "main.html" //relocate to the main page.
-                   });
-            }
-
-        }
     })
 
 
