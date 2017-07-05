@@ -132,7 +132,6 @@ Vue.component('object-form', {
             //xhr.setRequestHeader("Content-Type", "application/json");
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-            xhr.setRequestHeader("Origin", "http://localhost:8080");
             xhr.onload = function () {
                 var received = JSON.parse(xhr.responseText);
 
