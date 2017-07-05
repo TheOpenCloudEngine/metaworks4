@@ -163,16 +163,19 @@ Vue.component('object-grid', {
         },
 
         getServiceHost: function(){
-            if(this.serviceLocator){
-                if(this.serviceLocator.host)
-                    return this.serviceLocator.host;
-                else
-                    return this.serviceLocator;
+             if(this.serviceLocator){
+                 if(this.serviceLocator.host){
+                     return this.serviceLocator.host;
+                 }else if(this.$root.$refs[this.serviceLocator]){
+                     return this.$root.$refs[this.serviceLocator].host;
+                 }else{
+                     return this.serviceLocator;
+                 }
 
-            }else{
-                return "http://127.0.0.1:8080"
-            }
-        },
+             }else{
+                 return "http://127.0.0.1:8080"
+             }
+         },
 
         loadData: function () {
             if (this.online) {

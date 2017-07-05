@@ -38,10 +38,13 @@ Vue.component('object-form', {
     methods: {
        getServiceHost: function(){
             if(this.serviceLocator){
-                if(this.serviceLocator.host)
+                if(this.serviceLocator.host){
                     return this.serviceLocator.host;
-                else
+                }else if(this.$root.$refs[this.serviceLocator]){
+                    return this.$root.$refs[this.serviceLocator].host;
+                }else{
                     return this.serviceLocator;
+                }
 
             }else{
                 return "http://127.0.0.1:8080"
