@@ -36,6 +36,17 @@ Vue.component('object-form', {
     },
 
     methods: {
+       getServiceHost: function(){
+            if(this.serviceLocator){
+                if(this.serviceLocator.host)
+                    return this.serviceLocator.host;
+                else
+                    return this.serviceLocator;
+
+            }else{
+                return "http://127.0.0.1:8080"
+            }
+        },
 
         initForm: function(){
 
@@ -45,7 +56,7 @@ Vue.component('object-form', {
             var metadata;
 
 
-            xhr.open('GET', "http://localhost:8080/classdefinition?className=" + this.java, false);
+            xhr.open('GET', this.getServiceHost() + "/classdefinition?className=" + this.java, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.onload = function () {
                 metadata = JSON.parse(xhr.responseText)
@@ -113,7 +124,7 @@ Vue.component('object-form', {
 
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('POST', "http://localhost:8080/" + path, false);
+            xhr.open('POST', this.getServiceHost() + "/" + path, false);
             //xhr.setRequestHeader("Content-Type", "application/json");
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
@@ -143,7 +154,7 @@ Vue.component('object-form', {
             console.log(this.data);
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('PUT', "http://localhost:8080/" + path + "/" +this.data.pNo, false);
+            xhr.open('PUT', this.getServiceHost() + "/" + path + "/" +this.data.pNo, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
             xhr.onload = function () {
@@ -167,7 +178,7 @@ Vue.component('object-form', {
             var methodName = e.srcElement.id;
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('POST', "http://localhost:8080/rpc", false);
+            xhr.open('POST', this.getServiceHost() + "/rpc", false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
             xhr.onload = function () {

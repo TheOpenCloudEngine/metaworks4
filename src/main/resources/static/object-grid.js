@@ -19,7 +19,8 @@ Vue.component('object-grid', {
         columnChanger: Object,
         fullFledged: Boolean,
         online: Boolean,
-        options: Object
+        options: Object,
+        serviceLocator: Object
     },
 
 
@@ -78,7 +79,7 @@ Vue.component('object-grid', {
             var thisOptions = this.options;
 
 
-            xhr.open('GET', "http://localhost:8080/classdefinition?className=" + this.java, false);
+            xhr.open('GET', this.getServiceHost() + "/classdefinition?className=" + this.java, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.onload = function () {
                 metadata = JSON.parse(xhr.responseText)
@@ -161,6 +162,18 @@ Vue.component('object-grid', {
             this.loadData();
         },
 
+        getServiceHost: function(){
+            if(this.serviceLocator){
+                if(this.serviceLocator.host)
+                    return this.serviceLocator.host;
+                else
+                    return this.serviceLocator;
+
+            }else{
+                return "http://127.0.0.1:8080"
+            }
+        },
+
         loadData: function () {
             if (this.online) {
                 var page = this.pagination.page;
@@ -172,7 +185,7 @@ Vue.component('object-grid', {
                 var self = this
 
 
-                xhr.open('GET', "http://localhost:8080/" + path+ "?page=" + (page-1) + "&size=" + size + (this.sort ? "&sort=" + this.sort.name + "," + this.sort.type : ""), false);
+                xhr.open('GET', this.getServiceHost() + "/" + path+ "?page=" + (page-1) + "&size=" + size + (this.sort ? "&sort=" + this.sort.name + "," + this.sort.type : ""), false);
                 xhr.setRequestHeader("access_token", localStorage['access_token']);
                 xhr.onload = function () {
                     var jsonData = JSON.parse(xhr.responseText);
@@ -218,7 +231,7 @@ Vue.component('object-grid', {
             var path = 'product';
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('DELETE', "http://localhost:8080/" + path + "/"+key, false);
+            xhr.open('DELETE', this.getServiceHost() + "/" + path + "/"+key, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.onload = function () {
                 console.log(xhr);
