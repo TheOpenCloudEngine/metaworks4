@@ -25,7 +25,7 @@ Vue.component('iam-login', {
 
            var me = this;
 
-           var iam = new IAM('http://iam.uengine.io:8080');
+           var iam = new IAM(this.iamServer);
            iam.setDefaultClient('e74a9505-a811-407f-b4f6-129b7af1c703','109cf590-ac67-4b8c-912a-913373ada046');
            iam.passwordCredentialsLogin(this.id,this.password,'uEngineSubscriptions/subscriptionsapi','JWT')
                .done(function(response){
