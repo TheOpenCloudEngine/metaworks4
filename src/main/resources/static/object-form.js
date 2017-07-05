@@ -19,6 +19,7 @@ Vue.component('object-form', {
         options: Object,
         checked: Object,
         pNo: String,
+        serviceLocator: Object
     },
 
     watch:{
