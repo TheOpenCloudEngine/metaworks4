@@ -15,7 +15,7 @@ Vue.component('iam-login', {
         iamServer: String,
         id: String,
         password: String,
-        loggedIn: Boolean
+        loggedIn: Object
     },
 
 
