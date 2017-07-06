@@ -6,17 +6,29 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import org.metaworks.ObjectInstance;
+import org.metaworks.WebObjectType;
+import org.metaworks.dwr.MetaworksRemoteService;
+import org.metaworks.springboot.configuration.Metaworks4BaseApplication;
 import org.oce.garuda.multitenancy.TenantContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.uengine.modeling.resource.DefaultResource;
+import org.uengine.modeling.resource.IResource;
+import org.uengine.modeling.resource.ResourceManager;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 
 @Transactional
@@ -115,6 +127,56 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
         };
     }
 
+    @Autowired
+    private ApplicationContext context;
+
+    public void beforeSave(MultitenantEntity multitenantEntity) {
+
+
+        try {
+            if(multitenantEntity.getProps_()!=null){
+                IResource resource = new DefaultResource(_key(multitenantEntity));
+
+                ResourceManager resourceManager = context.getBean(ResourceManager.class);
+                resourceManager.save(resource, multitenantEntity.getProps_());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void afterLoad(MultitenantEntity multitenantEntity) {
+        String key = _key(multitenantEntity);
+
+        if(key==null) return;
+
+        IResource resource = new DefaultResource(key);
+        try {
+            ResourceManager resourceManager = context.getBean(ResourceManager.class);
+            multitenantEntity.setProps_((Map<String, String>) resourceManager.getObject(resource));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String _key(MultitenantEntity multitenantEntity) {
+
+        WebObjectType type = null;
+        try {
+            String className = multitenantEntity.getClass().getName();
+            type = MetaworksRemoteService.getInstance().getMetaworksType(className);
+
+            org.metaworks.Type m2type = type.metaworks2Type();
+            ObjectInstance instance = (ObjectInstance)m2type.createInstance();
+            instance.setObject(multitenantEntity);
+            Object keyFieldValue = instance.getFieldValue(type.getKeyFieldDescriptor().getDisplayName());
+
+            return (className + "@" + keyFieldValue);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @Override
     public <S extends E> S save(S entity) {
@@ -123,6 +185,10 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 
         if(entity instanceof BeforeSave){
             ((BeforeSave)entity).beforeSave();
+        }
+
+        if(entity instanceof MultitenantEntity){
+            beforeSave((MultitenantEntity) entity);
         }
 
         return super.save(entity);
@@ -139,6 +205,10 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 
             if(entity instanceof AfterLoad) {
                 ((AfterLoad) entity).afterLoad();
+            }
+
+            if(entity instanceof MultitenantEntity){
+                afterLoad((MultitenantEntity) entity);
             }
 
         }
