@@ -15,13 +15,18 @@ Vue.component('iam-login', {
         iamServer: String,
         id: String,
         password: String,
-        loggedIn: Object
+        listener: Object,
     },
 
+    created: function(){
+        if(!this.id) this.id = localStorage["iam-login.id"];
+        if(!this.password) this.password = localStorage["iam-login.password"];
+    },
 
     methods: {
        login: function (){
-            //alert(this.id);
+           localStorage["iam-login.id"] = this.id;
+           localStorage["iam-login.password"] = this.password;
 
            var me = this;
 
@@ -33,12 +38,15 @@ Vue.component('iam-login', {
 
                    localStorage['access_token'] = response['access_token'];
                    localStorage['username'] = me.id;
+                   localStorage['iam.photo_url'] = response['photo_url'];
 
                    var tenant = me.id.split("@")[1];
                    tenant = tenant.split(".")[0];
                    localStorage['tenant'] = tenant;
 
-                   me.loggedIn = true;
+                   if(me.listener){
+                       me.listener.onLoggedIn();
+                   }
                });
         }
 

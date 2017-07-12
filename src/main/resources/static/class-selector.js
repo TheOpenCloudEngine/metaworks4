@@ -1,7 +1,7 @@
 var template;
 {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', "http://raw.git.com/TheOpenCloudEngine/metaworks4/master/src/main/resources/static/class-selector.html", false);
+    xhr.open('GET', "http://rawgit.com/TheOpenCloudEngine/metaworks4/master/src/main/resources/static/class-selector.html", false);
     xhr.onload = function () {
         template = xhr.responseText
     }

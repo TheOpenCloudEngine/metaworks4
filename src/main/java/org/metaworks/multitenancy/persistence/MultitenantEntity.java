@@ -24,6 +24,7 @@ import java.util.Map;
  * Created by uengine on 2017. 7. 6..
  */
 
+@Component
 @Multitenant
 @TenantDiscriminatorColumn(name = "TENANTID", contextProperty = "tenant-id")
 public class MultitenantEntity implements Serializable {
