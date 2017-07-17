@@ -133,31 +133,31 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
     public void beforeSave(MultitenantEntity multitenantEntity) {
 
 
-        try {
-            if(multitenantEntity.getProps_()!=null){
-                IResource resource = new DefaultResource(_key(multitenantEntity));
-
-                ResourceManager resourceManager = context.getBean(ResourceManager.class);
-                resourceManager.save(resource, multitenantEntity.getProps_());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            if(multitenantEntity.getProps_()!=null){
+//                IResource resource = new DefaultResource(_key(multitenantEntity));
+//
+//                ResourceManager resourceManager = context.getBean(ResourceManager.class);
+//                resourceManager.save(resource, multitenantEntity.getProps_());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
     }
 
     public void afterLoad(MultitenantEntity multitenantEntity) {
-        String key = _key(multitenantEntity);
-
-        if(key==null) return;
-
-        IResource resource = new DefaultResource(key);
-        try {
-            ResourceManager resourceManager = context.getBean(ResourceManager.class);
-            multitenantEntity.setProps_((Map<String, String>) resourceManager.getObject(resource));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        String key = _key(multitenantEntity);
+//
+//        if(key==null) return;
+//
+//        IResource resource = new DefaultResource(key);
+//        try {
+//            ResourceManager resourceManager = context.getBean(ResourceManager.class);
+//            multitenantEntity.setProps_((Map<String, String>) resourceManager.getObject(resource));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     public String _key(MultitenantEntity multitenantEntity) {

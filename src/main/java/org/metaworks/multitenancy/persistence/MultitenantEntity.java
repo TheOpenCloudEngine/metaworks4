@@ -7,6 +7,7 @@ import org.eclipse.persistence.annotations.TenantDiscriminatorColumn;
 import org.metaworks.ObjectInstance;
 import org.metaworks.WebObjectType;
 import org.metaworks.annotation.Hidden;
+import org.metaworks.annotation.RestAggregator;
 import org.metaworks.dwr.MetaworksRemoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,26 +41,40 @@ public class MultitenantEntity implements Serializable {
         this.tenantId = tenantId;
     }
 
+
     @Transient
-    Map<String, String> props_;
-    @JsonAnyGetter
-    @Hidden
-    public Map<String, String> getProps_() {
-        return props_;
-    }
-    public void setProps_(Map<String, String> props_) {
-        this.props_ = props_;
-    }
-    @JsonAnySetter
-    public void addProps_(String key, String value) {
-        if(this.props_ == null)
-            this.props_ = new HashMap<String, String>();
+    TenantProperties tenantProperties;
+    @RestAggregator(
+            path="/metadata/{{entity.name}}/{{@id}}", role="mongodb"
+    )
+        public TenantProperties getTenantProperties() {
+            return tenantProperties;
+        }
+        public void setTenantProperties(TenantProperties tenantProperties) {
+            this.tenantProperties = tenantProperties;
+        }
 
-        this.props_.put(key, value);
-    }
 
-    @Autowired
-    ResourceManager resourceManager;
+//    @Transient
+//    Map<String, String> props_;
+//    @JsonAnyGetter
+//    @Hidden
+//    public Map<String, String> getProps_() {
+//        return props_;
+//    }
+//    public void setProps_(Map<String, String> props_) {
+//        this.props_ = props_;
+//    }
+//    @JsonAnySetter
+//    public void addProps_(String key, String value) {
+//        if(this.props_ == null)
+//            this.props_ = new HashMap<String, String>();
+//
+//        this.props_.put(key, value);
+//    }
+//
+//    @Autowired
+//    ResourceManager resourceManager;
 
 
 
