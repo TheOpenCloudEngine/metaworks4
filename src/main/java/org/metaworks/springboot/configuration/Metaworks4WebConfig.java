@@ -8,6 +8,7 @@ import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
+import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.Bean;
@@ -124,7 +125,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
             @Override
             public Resource<?> process(Resource<?> resource) {
                 // additional processing only for entities that have rest resources
-                if (resource.getContent().getClass().isAnnotationPresent(RestAggregator.class)) {
+                if (true || resource.getContent().getClass().isAnnotationPresent(RestAggregator.class)) {
                     Map<String, String> links = new HashMap<String, String>();
 
                     // process any fields that have the RestResourceMapper annotation
@@ -139,27 +140,43 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                             if (resourceId!=null) {
                                 // construct a REST endpoint URL from the annotation properties and resource id
-                                final String restResourceURL = "/"+restResourceMapper.path() + "/" + resource.getContent().getClass().getSimpleName().toLowerCase() + "/" + resourceId;
+                                String path = restResourceMapper.path();
+
+
+                                path = path.replaceAll("\\{\\{entity.name\\}\\}", resource.getContent().getClass().getSimpleName().toLowerCase());
+                                path = path.replaceAll("\\{\\{tenantId\\}\\}", TenantContext.getThreadLocalInstance().getTenantId());
+                                path = path.replaceAll("\\{\\{\\@id\\}\\}", resource.getContent().toString());
 
                                 try {
-                                    URL resourceURL = new URL(restResourceURL);
+                                    URL resourceURL;
                                     Class entityClass = resource.getContent().getClass();
                                     //use HATEOAS LinkBuilder to get the right host and port for constructing the appropriate resource link
                                     LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
-                                    URL hateoasURL = new URL(linkBuilder.withSelfRel().getHref());
+                                    URL selfURL = new URL(linkBuilder.withSelfRel().getHref());
 
-                                    resourceURL = new URL(
-                                            "${hateoasURL.protocol}://${hateoasURL.host}:${hateoasURL.port}${resourceURL.path}"
-                                    );
+                                    if("self".equals(restResourceMapper.role())) {
+                                        resourceURL = new URL(
+                                                selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
+                                        );
+                                    }if(restResourceMapper.role().startsWith("http")){
+                                        resourceURL = new URL(
+                                                restResourceMapper.role() + path
+                                        );
+                                    }else{
+                                        resourceURL = new URL(
+                                                selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
+                                        );
+                                    }
 
                                     links.put(field.getName(), resourceURL.toString());
                                 }catch (Exception e) {
+                                    e.printStackTrace();
                                 }
                             }
 
                         }
                         // add any additional links to the output
-                        for(String linkResourceName : links.values()){
+                        for(String linkResourceName : links.keySet()){
                             resource.add(new Link(links.get(linkResourceName), linkResourceName));
                         }
 

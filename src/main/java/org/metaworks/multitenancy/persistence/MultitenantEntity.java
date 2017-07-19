@@ -43,10 +43,10 @@ public class MultitenantEntity implements Serializable {
 
 
     @Transient
-    TenantProperties tenantProperties;
     @RestAggregator(
             path="/metadata/{{entity.name}}/{{@id}}", role="mongodb"
     )
+    TenantProperties tenantProperties;
         public TenantProperties getTenantProperties() {
             return tenantProperties;
         }

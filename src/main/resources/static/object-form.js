@@ -148,6 +148,21 @@ Vue.component('object-form', {
                     }
                 });
             }
+
+            //send tenant properties as well
+            if(self.data && self.data._links && self.data._links.tenantProperties){
+                var tenantPropertiesURI = self.data._links.tenantProperties.href;
+
+                var xhr = new XMLHttpRequest()
+                var self = this
+                xhr.open('POST', tenantPropertiesURI, false);
+                xhr.setRequestHeader("access_token", localStorage['access_token']);
+                xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+                xhr.onload = function () {
+                }
+                xhr.send(JSON.stringify(this.data)); //TODO: must be reduced for only the tenant properties
+
+            }
         },
          update_: function () {
 
