@@ -89,6 +89,9 @@ public class DefaultMetadataService implements MetadataService {
 
                 i++;
 
+                if(attribute.getAttributes()!=null)
+                    attribute.getAttributes().remove("extended");
+
                 attributeList.add(attribute);
             }
 

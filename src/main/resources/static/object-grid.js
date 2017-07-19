@@ -152,7 +152,7 @@ Vue.component('object-grid', {
             //console.log(pagination);
 
             this.pagination = pagination;
-           //this.infoExtraction(pagination);
+            //this.infoExtraction(pagination);
             this.loadData();
 
         },
@@ -163,19 +163,19 @@ Vue.component('object-grid', {
         },
 
         getServiceHost: function(){
-             if(this.serviceLocator){
-                 if(this.serviceLocator.host){
-                     return this.serviceLocator.host;
-                 }else if(this.$root.$refs[this.serviceLocator]){
-                     return this.$root.$refs[this.serviceLocator].host;
-                 }else{
-                     return this.serviceLocator;
-                 }
+            if(this.serviceLocator){
+                if(this.serviceLocator.host){
+                    return this.serviceLocator.host;
+                }else if(this.$root.$refs[this.serviceLocator]){
+                    return this.$root.$refs[this.serviceLocator].host;
+                }else{
+                    return this.serviceLocator;
+                }
 
-             }else{
-                 return "http://127.0.0.1:8080"
-             }
-         },
+            }else{
+                return "http://127.0.0.1:8080"
+            }
+        },
 
         loadData: function () {
             if (this.online) {
@@ -193,6 +193,46 @@ Vue.component('object-grid', {
                 xhr.onload = function () {
                     var jsonData = JSON.parse(xhr.responseText);
                     self.rowData = jsonData._embedded[path];
+
+                    for(var i in self.rowData){
+
+                        var row = self.rowData[i];
+
+                        //load tenant properties as well
+                        if(row && row._links && row._links.tenantProperties){
+                            var tenantPropertiesURI = row._links.tenantProperties.href;
+
+                            var xhr_ = new XMLHttpRequest()
+                            xhr_.open('GET', tenantPropertiesURI, true);
+                            xhr_.setRequestHeader("access_token", localStorage['access_token']);
+                            xhr_.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+                            xhr_.onload = function () {
+                                if(xhr_.responseText && xhr_.responseText.trim().length > 0){
+
+                                    var jsonData = JSON.parse(xhr_.responseText);
+
+                                    if(jsonData.json){ //TODO: couchbase specific
+                                        jsonData = jsonData.json;
+                                    }
+
+                                    if(jsonData && self.metadata){
+                                        for(var j in self.metadata.fieldDescriptors){
+                                            var fd = self.metadata.fieldDescriptors[j];
+
+                                            if(fd.attributes && fd.attributes.extended){
+                                                Vue.set(row, fd.name, jsonData[fd.name]);
+                                            }
+
+                                        }
+
+                                    }
+                                }
+                            }
+                            xhr_.send(); //TODO: must be reduced for only the tenant properties
+
+                        }
+
+                    }
                 }
                 xhr.send();
             }
@@ -230,11 +270,12 @@ Vue.component('object-grid', {
             this.data = this.rowData;
 
         },
-        submit_for_delete: function (key, num) {
+        submit_for_delete: function (uri, num) {
             var path = 'product';
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('DELETE', this.getServiceHost() + "/" + path + "/"+key, false);
+            //var uri = this.getServiceHost() + "/" + path + "/"+key
+            xhr.open('DELETE', uri, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.onload = function () {
                 console.log(xhr);
@@ -242,41 +283,55 @@ Vue.component('object-grid', {
             }
             xhr.send();
 
-         },
+        },
 
         openDialog: function(ref) {
             this.$refs[ref].open();
         },
         closeDialog: function(ref) {
             this.$refs[ref].close();
-          },
+        },
         onOpen: function(){
             console.log('Opened');
-          },
+        },
         onClose: function(type) {
 
-            if(type == 'ok'){
+            if(type == 'ok' && this.online){
                 this.deleteSubmit();
+            }else{
+                this.deleteSelectedRows();
             }
             console.log('Closed', type);
-          },
+        },
 
-          onSelect: function(selected){
+        onSelect: function(selected){
 
-                this.selected = selected;
+            this.selected = selected;
 
-          },
+        },
 
 
-          deleteSubmit: function(){
-             for(var i in this.selected){
-                   var primaryKey = (this.selected[i][this.metadata.keyFieldDescriptor.name]);
-                   this.submit_for_delete(primaryKey);
+        deleteSubmit: function(){
+            for(var i in this.selected){
+                //var primaryKey = (this.selected[i][this.metadata.keyFieldDescriptor.name]);
+                this.submit_for_delete(this.selected[i]._links.self.href);
 
-             }
+            }
 
-             this.loadData();
+            this.loadData();
 
-         }
-     }
+        },
+
+
+        deleteSelectedRows: function(){
+            var count = 0;
+            for(var i in this.selected){
+                this.rowData.splice(i-count, 1);
+                count ++;
+            }
+
+            this.loadData();
+
+        }
+    }
 })

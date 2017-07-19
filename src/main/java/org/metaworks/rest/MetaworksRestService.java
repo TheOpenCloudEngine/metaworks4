@@ -247,17 +247,29 @@ public class MetaworksRestService{
 
     @RequestMapping(value = "/classdefinition", method = RequestMethod.POST)
     public void putClassDefinition(@RequestBody ClassDefinition classDefinition) throws Exception{
+        if(TransactionContext.getThreadLocalInstance()==null)
+            new TransactionContext();
+
         classManager.setClassName(classDefinition.getName());
         classManager.setClassDefinition(classDefinition);
         classManager.save();
+
+        TransactionContext.getThreadLocalInstance().commit();
 
     }
 
 
     @RequestMapping(value = "/classdefinition", method = RequestMethod.GET)
     public ClassDefinition getClassDefinition(@RequestParam(value="className", defaultValue="") String className) throws Exception{
+
+        if(TransactionContext.getThreadLocalInstance()==null)
+            new TransactionContext();
+
         classManager.setClassName(className);
         classManager.load();
+
+        TransactionContext.getThreadLocalInstance().commit();
+
         return classManager.getClassDefinition();
     }
 

@@ -23,12 +23,12 @@ Vue.component('object-form', {
     },
 
     watch:{
-      java: function(){
-          var initVars = this.initForm();
+        java: function(){
+            var initVars = this.initForm();
 
-          this.metadata = initVars.metadata;
-          this.columns = initVars.columns;
-      }
+            this.metadata = initVars.metadata;
+            this.columns = initVars.columns;
+        }
     },
     data: function(){
 
@@ -37,7 +37,7 @@ Vue.component('object-form', {
     },
 
     methods: {
-       getServiceHost: function(){
+        getServiceHost: function(){
             if(this.serviceLocator){
                 if(this.serviceLocator.host){
                     return this.serviceLocator.host;
@@ -135,7 +135,8 @@ Vue.component('object-form', {
             xhr.onload = function () {
                 var received = JSON.parse(xhr.responseText);
 
-                self.data = received;
+                self.data.ormid = received.ormid;
+                self.data._links = received._links;
             }
             xhr.send(JSON.stringify(this.data));
 
@@ -160,11 +161,25 @@ Vue.component('object-form', {
                 xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
                 xhr.onload = function () {
                 }
-                xhr.send(JSON.stringify(this.data)); //TODO: must be reduced for only the tenant properties
+
+                var tenantProperties = {};
+                if(self.metadata){
+                    for(var j in self.metadata.fieldDescriptors){
+                        var fd = self.metadata.fieldDescriptors[j];
+
+                        if(fd.attributes && fd.attributes.extended){
+                            tenantProperties[fd.name] = this.data[fd.name];
+                        }
+
+                    }
+
+                }
+
+                xhr.send(JSON.stringify(tenantProperties));
 
             }
         },
-         update_: function () {
+        update_: function () {
 
             var pathElements = this.java.split(".");
             var path = pathElements[pathElements.length - 1].toLowerCase();
@@ -172,7 +187,10 @@ Vue.component('object-form', {
             console.log(this.data);
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('PUT', this.getServiceHost() + "/" + path + "/" +this.data.pNo, false);
+
+            //var uri = this.getServiceHost() + "/" + path + "/" +this.data.pNo;
+            var uri = this.data._links.self.href;
+            xhr.open('PUT', uri, false);
             xhr.setRequestHeader("access_token", localStorage['access_token']);
             xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
             xhr.onload = function () {
