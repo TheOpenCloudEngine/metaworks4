@@ -47,6 +47,8 @@ public class TenantAwareFilter implements Filter {
                 JSONObject contexts = (JSONObject) jwtClaimsSet.getClaim("context");
                 String userName = (String) contexts.get("userName");
 
+                //new User(userName);
+
                 tenantId = userName.split("@")[1];
 
             } catch (Exception e) {

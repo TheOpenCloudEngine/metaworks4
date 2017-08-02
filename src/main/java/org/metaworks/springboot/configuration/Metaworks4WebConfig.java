@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 
 @EnableWebMvc
-@ComponentScan(basePackageClasses = {TenantAwareFilter.class, MetaworksRestService.class, ClassManager.class, MetadataService.class})
+@ComponentScan(basePackageClasses = {/*TenantAwareFilter.class,*/ MetaworksRestService.class, ClassManager.class, MetadataService.class})
 @EnableJpaRepositories(repositoryBaseClass = MultitenantRepositoryImpl.class)
 public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //    @Override
@@ -116,8 +116,8 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //        return ret;
 //    }
 
-    @Autowired
-    EntityLinks entityLinks;
+//    @Autowired
+//    EntityLinks entityLinks;
 
     @Bean
     public ResourceProcessor<Resource<?>> resourceProcessor() {
@@ -151,8 +151,8 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                                     URL resourceURL;
                                     Class entityClass = resource.getContent().getClass();
                                     //use HATEOAS LinkBuilder to get the right host and port for constructing the appropriate resource link
-                                    LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
-                                    URL selfURL = new URL(linkBuilder.withSelfRel().getHref());
+                                    //LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
+                                    URL selfURL = new URL("http://localhost");//linkBuilder.withSelfRel().getHref());
 
                                     if("self".equals(restResourceMapper.role())) {
                                         resourceURL = new URL(
