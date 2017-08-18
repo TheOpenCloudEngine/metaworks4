@@ -2,7 +2,9 @@ package org.metaworks.springboot.configuration;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.RestAggregator;
+import org.metaworks.common.util.ApplicationContextRegistry;
 import org.metaworks.common.util.VersionConfigurer;
+import org.metaworks.iam.IamRestFilter;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.MetadataService;
@@ -15,6 +17,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.hateoas.*;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -45,14 +48,10 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
         registry.addMapping("/**")
                 .allowedOrigins("*")
+                .maxAge(3600)
                 .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("access_token", "Content-Type");
-
-//
-//        registry.addMapping("/**").allowedOrigins("*");
-//        registry.addMapping("/people").allowedOrigins("*");
-//        registry.addMapping("/**").allowedOrigins("http://localhost:8081");
-//        registry.addMapping("/people").allowedOrigins("http://localhost:8081");
+                .allowedHeaders("access_token", "Content-Type", "x-requested-with", "origin", "accept",
+                        "authorization", "Location");
     }
 
     @Bean
@@ -190,9 +189,43 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         };
     }
 
+    /**
+     * resources/application.properties 의 설정 및 시스템 환경변수 로깅
+     * @return VersionConfigurer
+     */
     @Bean
     public VersionConfigurer versionConfigurer() {
         return new VersionConfigurer();
+    }
+
+    /**
+     * 스프링 부트 어플리케이션콘텍스트를 static 으로 사용가능하게 제공.
+     * @return ApplicationContextRegistry
+     */
+    @Bean
+    public ApplicationContextRegistry applicationContextRegistry(){
+        return new ApplicationContextRegistry();
+    }
+
+    /**
+     * application.properties 의 값 또는 -D 옵션의 시스템 프로퍼티를 사용할 수 있다. (활용: Docker env)
+     */
+    @Autowired
+    private Environment env;
+
+    /**
+     * Iam Rest Proxy. 화면의 IAM 요청을 클라이언트키, 시크릿 키를 헤더에 포함시켜 프락시 통신한다.
+     * @return
+     */
+    @Bean
+    public IamRestFilter iamRestFilter(){
+        IamRestFilter iamRestFilter = new IamRestFilter();
+        iamRestFilter.setClientKey(env.getProperty("iam.clientKey"));
+        iamRestFilter.setClientSecretKey(env.getProperty("iam.clientSecretKey"));
+        iamRestFilter.setIamHost(env.getProperty("iam.host"));
+        iamRestFilter.setApplicationRestEndPoint(env.getProperty("iam.applicationRestEndPoint"));
+
+        return iamRestFilter;
     }
 
 }
