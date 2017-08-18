@@ -15,12 +15,16 @@
 	<name>Metaworks4 Framework</name>
 	<version>1.0.1-SNAPSHOT</version>
 
-
 	<properties>
+		<!-- Java -->
 		<java.version>1.8</java.version>
 	</properties>
 
 	<dependencies>
+
+		<!-- ============== -->
+		<!--  Spring Boot & Jpa   -->
+		<!-- ============== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-rest</artifactId>
@@ -36,16 +40,29 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>org.eclipse.persistence.jpa</artifactId>
+			<version>2.6.4</version>
+		</dependency>
 
 
+		<!-- ============== -->
+		<!--  h2 Database   -->
+		<!-- ============== -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+		</dependency>
+
+
+		<!-- ============== -->
+		<!--  uEngine libs  -->
+		<!-- ============== -->
 		<dependency>
 			<groupId>org.uengine</groupId>
 			<artifactId>uengine-resource-manager</artifactId>
@@ -59,10 +76,21 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.eclipse.persistence</groupId>
-			<artifactId>org.eclipse.persistence.jpa</artifactId>
-			<version>2.6.4</version>
+			<groupId>org.uengine.metaworks</groupId>
+			<artifactId>metaworks3</artifactId>
+			<version>1.3.0-SNAPSHOT</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.uengine</groupId>
+			<artifactId>uengine-uml</artifactId>
+			<version>4.1.0-SNAPSHOT</version>
+		</dependency>
+
+
+		<!-- ============== -->
+		<!--  Jwt           -->
+		<!-- ============== -->
 
 		<dependency>
 			<groupId>com.nimbusds</groupId>
@@ -70,27 +98,25 @@
 			<version>4.16.1</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.uengine.metaworks</groupId>
-			<artifactId>metaworks3</artifactId>
-			<version>1.3.0-SNAPSHOT</version>
-		</dependency>
+		<!-- ============== -->
+		<!--  Couchbase     -->
+		<!-- ============== -->
+
 		<dependency>
 			<groupId>com.couchbase.client</groupId>
 			<artifactId>java-client</artifactId>
 			<version>2.2.7</version>
 		</dependency>
+
+		<!-- ============== -->
+		<!--  boon Json     -->
+		<!-- ============== -->
+
 		<dependency>
 			<groupId>io.fastjson</groupId>
 			<artifactId>boon</artifactId>
 			<version>0.33</version>
 		</dependency>
-		<dependency>
-			<groupId>org.uengine</groupId>
-			<artifactId>uengine-uml</artifactId>
-			<version>4.1.0-SNAPSHOT</version>
-		</dependency>
-
 
 	</dependencies>
 

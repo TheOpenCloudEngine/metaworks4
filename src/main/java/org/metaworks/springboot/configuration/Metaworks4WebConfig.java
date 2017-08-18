@@ -2,6 +2,7 @@ package org.metaworks.springboot.configuration;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.RestAggregator;
+import org.metaworks.common.util.VersionConfigurer;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.MetadataService;
@@ -187,6 +188,11 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                 return resource;
             }
         };
+    }
+
+    @Bean
+    public VersionConfigurer versionConfigurer() {
+        return new VersionConfigurer();
     }
 
 }
