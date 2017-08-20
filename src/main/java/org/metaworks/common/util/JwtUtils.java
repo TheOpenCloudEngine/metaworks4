@@ -17,12 +17,24 @@
  */
 package org.metaworks.common.util;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import net.minidev.json.JSONObject;
+import org.apache.commons.io.IOUtils;
 
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
 
 /**
@@ -40,21 +52,33 @@ public class JwtUtils {
         return JWTClaimsSet.parse(jsonPayload);
     }
 
-    public static boolean validateToken(String jwtToken, String sharedSecret) throws Exception {
-        JWSVerifier verifier = new MACVerifier(sharedSecret);
-        JWSObject jwsObject = JWSObject.parse(jwtToken);
+    public static boolean verify(JWSObject jwsObject) throws Exception {
+        JWSHeader header = jwsObject.getHeader();
+        JWSAlgorithm algorithm = header.getAlgorithm();
 
-        if (!jwsObject.verify(verifier)) {
+        if (algorithm.getName().equals(JWSAlgorithm.HS256.getName())) {
+            JWSVerifier verifier = new MACVerifier(getHS256SecretKey());
+            return jwsObject.verify(verifier);
+
+        } else if (algorithm.getName().equals(JWSAlgorithm.RS256.getName())) {
+            RSAPublicKey publicKey = getRSAPublicKey();
+            JWSVerifier verifier = new RSASSAVerifier(publicKey);
+            return jwsObject.verify(verifier);
+        }
+        return false;
+    }
+
+    public static boolean validateToken(String jwtToken) throws Exception {
+        JWSObject jwsObject = JWSObject.parse(jwtToken);
+        if (!verify(jwsObject)) {
             return false;
         }
         return true;
     }
 
-    public static boolean validateToken(String jwtToken, String sharedSecret, Date expirationTime) throws Exception {
-        JWSVerifier verifier = new MACVerifier(sharedSecret);
+    public static boolean validateToken(String jwtToken, Date expirationTime) throws Exception {
         JWSObject jwsObject = JWSObject.parse(jwtToken);
-
-        if (!jwsObject.verify(verifier)) {
+        if (!verify(jwsObject)) {
             return false;
         }
 
@@ -70,5 +94,57 @@ public class JwtUtils {
             return false;
         }
         return true;
+    }
+
+    public static RSAPublicKey getRSAPublicKey() throws Exception {
+        return getRSAPublicKey(null);
+    }
+
+    public static RSAPublicKey getRSAPublicKey(File f)
+            throws Exception {
+
+        if (f == null) {
+            f = ResourceUtils.getFile("classpath:jwt-keys/RS256.pub");
+        }
+
+        FileInputStream fis = new FileInputStream(f);
+        DataInputStream dis = new DataInputStream(fis);
+        byte[] keyBytes = new byte[(int) f.length()];
+        dis.readFully(keyBytes);
+        dis.close();
+
+        X509EncodedKeySpec spec =
+                new X509EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return (RSAPublicKey) kf.generatePublic(spec);
+    }
+
+
+    public static RSAPrivateKey getRSAPrivateKey() throws Exception {
+        return getRSAPrivateKey(null);
+    }
+
+    public static RSAPrivateKey getRSAPrivateKey(File f) throws Exception {
+
+        if (f == null) {
+            f = ResourceUtils.getFile("classpath:jwt-keys/RS256.private");
+        }
+        FileInputStream fis = new FileInputStream(f);
+        DataInputStream dis = new DataInputStream(fis);
+        byte[] keyBytes = new byte[(int) f.length()];
+        dis.readFully(keyBytes);
+        dis.close();
+
+        PKCS8EncodedKeySpec spec =
+                new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return (RSAPrivateKey) kf.generatePrivate(spec);
+    }
+
+    public static String getHS256SecretKey() throws Exception {
+        File file = ResourceUtils.getFile("classpath:jwt-keys/HS256.key");
+        FileInputStream fisTargetFile = new FileInputStream(file);
+        String sharedSecret = IOUtils.toString(fisTargetFile, "UTF-8");
+        return sharedSecret;
     }
 }

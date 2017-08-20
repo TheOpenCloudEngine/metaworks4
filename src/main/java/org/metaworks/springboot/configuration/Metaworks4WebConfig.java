@@ -8,7 +8,6 @@ import org.metaworks.iam.IamRestFilter;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.MetadataService;
-import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
@@ -27,12 +26,10 @@ import org.uengine.modeling.resource.CachedResourceManager;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Storage;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 @EnableWebMvc
 @ComponentScan(basePackageClasses = {/*TenantAwareFilter.class,*/ MetaworksRestService.class, ClassManager.class, MetadataService.class})
@@ -131,14 +128,14 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                     // process any fields that have the RestResourceMapper annotation
                     Field[] fields = resource.getContent().getClass().getDeclaredFields();
 
-                    for(Field field : fields){
+                    for (Field field : fields) {
 
                         RestAggregator restResourceMapper = field.getAnnotation(RestAggregator.class);
 
-                        if (restResourceMapper!=null && resource.getId()!=null) {
+                        if (restResourceMapper != null && resource.getId() != null) {
                             String resourceId = resource.getId().getRel();
 
-                            if (resourceId!=null) {
+                            if (resourceId != null) {
                                 // construct a REST endpoint URL from the annotation properties and resource id
                                 String path = restResourceMapper.path();
 
@@ -154,29 +151,30 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                                     //LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
                                     URL selfURL = new URL("http://localhost");//linkBuilder.withSelfRel().getHref());
 
-                                    if("self".equals(restResourceMapper.role())) {
+                                    if ("self".equals(restResourceMapper.role())) {
                                         resourceURL = new URL(
                                                 selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
                                         );
-                                    }if(restResourceMapper.role().startsWith("http")){
+                                    }
+                                    if (restResourceMapper.role().startsWith("http")) {
                                         resourceURL = new URL(
                                                 restResourceMapper.role() + path
                                         );
-                                    }else{
+                                    } else {
                                         resourceURL = new URL(
                                                 selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
                                         );
                                     }
 
                                     links.put(field.getName(), resourceURL.toString());
-                                }catch (Exception e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
 
                         }
                         // add any additional links to the output
-                        for(String linkResourceName : links.keySet()){
+                        for (String linkResourceName : links.keySet()) {
                             resource.add(new Link(links.get(linkResourceName), linkResourceName));
                         }
 
@@ -191,6 +189,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
     /**
      * resources/application.properties 의 설정 및 시스템 환경변수 로깅
+     *
      * @return VersionConfigurer
      */
     @Bean
@@ -200,32 +199,23 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
     /**
      * 스프링 부트 어플리케이션콘텍스트를 static 으로 사용가능하게 제공.
+     *
      * @return ApplicationContextRegistry
      */
     @Bean
-    public ApplicationContextRegistry applicationContextRegistry(){
+    public ApplicationContextRegistry applicationContextRegistry() {
         return new ApplicationContextRegistry();
     }
 
-    /**
-     * application.properties 의 값 또는 -D 옵션의 시스템 프로퍼티를 사용할 수 있다. (활용: Docker env)
-     */
-    @Autowired
-    private Environment env;
 
     /**
      * Iam Rest Proxy. 화면의 IAM 요청을 클라이언트키, 시크릿 키를 헤더에 포함시켜 프락시 통신한다.
+     * Order = 0
+     *
      * @return
      */
     @Bean
-    public IamRestFilter iamRestFilter(){
-        IamRestFilter iamRestFilter = new IamRestFilter();
-        iamRestFilter.setClientKey(env.getProperty("iam.clientKey"));
-        iamRestFilter.setClientSecretKey(env.getProperty("iam.clientSecretKey"));
-        iamRestFilter.setIamHost(env.getProperty("iam.host"));
-        iamRestFilter.setApplicationRestEndPoint(env.getProperty("iam.applicationRestEndPoint"));
-
-        return iamRestFilter;
+    public IamRestFilter iamRestFilter() {
+        return new IamRestFilter();
     }
-
 }
