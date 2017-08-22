@@ -99,8 +99,11 @@ public class IamRestFilter implements Filter {
                         Map<String, Object> claims = jwtClaimsSet.getClaims();
                         map.putAll(claims);
 
+                        Map userData = (Map) ((Map) map.get("context")).get("user");
                         String marshal = JsonUtils.marshal(map);
                         String prettyPrint = JsonFormatterUtils.prettyPrint(marshal);
+
+
 
                         response.setHeader("Content-Type", "application/json;charset=UTF-8");
                         response.setHeader("Cache-Control", "no-store");
