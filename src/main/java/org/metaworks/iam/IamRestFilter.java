@@ -100,6 +100,12 @@ public class IamRestFilter implements Filter {
                         map.putAll(claims);
 
                         Map userData = (Map) ((Map) map.get("context")).get("user");
+
+                        //Provide spring security context
+//                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userData, null, null);
+//                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+//                        SecurityContextHolder.getContext().setAuthentication(authentication);
+
                         String marshal = JsonUtils.marshal(map);
                         String prettyPrint = JsonFormatterUtils.prettyPrint(marshal);
 

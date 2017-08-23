@@ -5,7 +5,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import net.minidev.json.JSONObject;
 import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Component;
+//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.core.context.SecurityContextHolder;
+//import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+//import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
@@ -38,24 +41,39 @@ public class TenantAwareFilter implements Filter {
 
             JWSObject jwsObject = null;
             String tenantId = null;
+            String userName = null;
+            JSONObject contexts = null;
             try {
                 jwsObject = JWSObject.parse(token);
 
                 JSONObject jsonPayload = jwsObject.getPayload().toJSONObject();
                 JWTClaimsSet jwtClaimsSet = JWTClaimsSet.parse(jsonPayload);
 
-                JSONObject contexts = (JSONObject) jwtClaimsSet.getClaim("context");
-                String userName = (String) contexts.get("userName");
+                contexts = (JSONObject) jwtClaimsSet.getClaim("context");
+                userName = (String) contexts.get("userName");
 
                 //new User(userName);
 
                 tenantId = userName.split("@")[1];
 
             } catch (Exception e) {
-                throw new RuntimeException("Invalid login ", e);
+                //TODO:
+                //throw new RuntimeException("Invalid login ", e);
+
+                filterChain.doFilter(servletRequest, servletResponse);
+
+                return;
             }
 
             new TenantContext(tenantId);
+
+            TenantContext.getThreadLocalInstance().setUserId(userName);
+
+            //Provide spring security context
+//            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(contexts, null, null);
+//            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+//            SecurityContextHolder.getContext().setAuthentication(authentication);
+
 
             filterChain.doFilter(servletRequest, servletResponse);
         }

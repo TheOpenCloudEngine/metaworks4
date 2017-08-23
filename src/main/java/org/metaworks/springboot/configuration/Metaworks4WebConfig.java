@@ -5,6 +5,7 @@ import org.metaworks.annotation.RestAggregator;
 import org.metaworks.common.util.ApplicationContextRegistry;
 import org.metaworks.common.util.VersionConfigurer;
 import org.metaworks.iam.IamRestFilter;
+import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.MetadataService;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.repository.query.spi.EvaluationContextExtension;
 import org.springframework.hateoas.*;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -47,7 +49,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                 .allowedOrigins("*")
                 .maxAge(3600)
                 .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("access_token", "Content-Type", "x-requested-with", "origin", "accept",
+                .allowedHeaders("access_token", "Content-Type", "x-requested-with", "Origin", "accept",
                         "authorization", "Location");
     }
 
@@ -95,6 +97,12 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         propertiesMap.getProperties().put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.CREATE_OR_EXTEND);
 
         return propertiesMap;
+    }
+
+
+    @Bean
+    EvaluationContextExtension securityExtension() {
+        return new SecurityEvaluationContextExtension();
     }
 
 
