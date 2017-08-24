@@ -95,6 +95,9 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
         JpaProperties propertiesMap = new JpaProperties();
         propertiesMap.getProperties().put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.CREATE_OR_EXTEND);
+        propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
+        //propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
+        //LOGGING_LEVEL
 
         return propertiesMap;
     }
