@@ -130,6 +130,11 @@ public class IamRestFilter implements Filter {
                 return;
             }
         } else {
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, OPTIONS");
+            response.setHeader("Access-Control-Max-Age", "3600");
+            response.setHeader("Access-Control-Allow-Headers", "x-requested-with, origin, content-type, accept, " +
+                    "management-key, management-secret, client-key, client-secret, authorization, Location, access_token");
             chain.doFilter(req, res);
         }
     }
