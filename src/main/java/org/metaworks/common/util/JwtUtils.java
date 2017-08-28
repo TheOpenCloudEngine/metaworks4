@@ -30,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -103,20 +104,20 @@ public class JwtUtils {
     public static RSAPublicKey getRSAPublicKey(File f)
             throws Exception {
 
+        InputStream fis;
         if (f == null) {
-            f = ResourceUtils.getFile("classpath:jwt-keys/RS256.pub");
+            fis = ResourceUtils.getSpringResourceInputStream("/jwt-keys/RS256.pub");
+        } else {
+            fis = new FileInputStream(f);
         }
 
-        FileInputStream fis = new FileInputStream(f);
-        DataInputStream dis = new DataInputStream(fis);
-        byte[] keyBytes = new byte[(int) f.length()];
-        dis.readFully(keyBytes);
-        dis.close();
-
+        byte[] bytes = IOUtils.toByteArray(fis);
         X509EncodedKeySpec spec =
-                new X509EncodedKeySpec(keyBytes);
+                new X509EncodedKeySpec(bytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) kf.generatePublic(spec);
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) kf.generatePublic(spec);
+        fis.close();
+        return rsaPublicKey;
     }
 
 
@@ -126,25 +127,24 @@ public class JwtUtils {
 
     public static RSAPrivateKey getRSAPrivateKey(File f) throws Exception {
 
+        InputStream fis;
         if (f == null) {
-            f = ResourceUtils.getFile("classpath:jwt-keys/RS256.private");
+            fis = ResourceUtils.getSpringResourceInputStream("/jwt-keys/RS256.private");
+        } else {
+            fis = new FileInputStream(f);
         }
-        FileInputStream fis = new FileInputStream(f);
-        DataInputStream dis = new DataInputStream(fis);
-        byte[] keyBytes = new byte[(int) f.length()];
-        dis.readFully(keyBytes);
-        dis.close();
-
+        byte[] bytes = IOUtils.toByteArray(fis);
         PKCS8EncodedKeySpec spec =
-                new PKCS8EncodedKeySpec(keyBytes);
+                new PKCS8EncodedKeySpec(bytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) kf.generatePrivate(spec);
+        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) kf.generatePrivate(spec);
+        fis.close();
+        return rsaPrivateKey;
     }
 
     public static String getHS256SecretKey() throws Exception {
-        File file = ResourceUtils.getFile("classpath:jwt-keys/HS256.key");
-        FileInputStream fisTargetFile = new FileInputStream(file);
-        String sharedSecret = IOUtils.toString(fisTargetFile, "UTF-8");
+        InputStream inputStream = ResourceUtils.getSpringResourceInputStream("/jwt-keys/HS256.key");
+        String sharedSecret = IOUtils.toString(inputStream, "UTF-8");
         return sharedSecret;
     }
 }

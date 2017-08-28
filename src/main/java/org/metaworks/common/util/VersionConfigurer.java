@@ -42,9 +42,10 @@ public class VersionConfigurer implements javax.servlet.ServletContextListener {
         ServletContext context = servletContextEvent.getServletContext();
         InputStream inputStream = null;
         try {
-            URL applicationUrl = getClass().getResource("/application.properties");
-            File applicationFile = ResourceUtils.getFile(applicationUrl);
-            inputStream = new FileInputStream(applicationFile);// context.getResourceAsStream("application.properties");
+//            URL applicationUrl = getClass().getResource("/application.properties");
+//            File applicationFile = ResourceUtils.getFile(applicationUrl);
+//            inputStream = new FileInputStream(applicationFile);// context.getResourceAsStream("application.properties");
+            inputStream = ResourceUtils.getSpringResourceInputStream("/application.properties");
             properties.load(inputStream);
         } catch (Exception ex) {
             throw new IllegalArgumentException("Cannot load a 'application.properties' file.", ex);

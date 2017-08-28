@@ -1,15 +1,20 @@
 package org.metaworks.iam;
 
 import com.nimbusds.jwt.JWTClaimsSet;
+import org.apache.commons.io.*;
 import org.metaworks.annotation.Default;
 import org.metaworks.common.util.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +67,7 @@ public class IamRestFilter implements Filter {
                     String token = req.getParameter("access_token");
                     boolean matches = token.matches("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
                     if (!matches) {
+
                         Map map = new HashMap();
                         JWTClaimsSet jwtClaimsSet = null;
                         try {
@@ -108,7 +114,6 @@ public class IamRestFilter implements Filter {
 
                         String marshal = JsonUtils.marshal(map);
                         String prettyPrint = JsonFormatterUtils.prettyPrint(marshal);
-
 
 
                         response.setHeader("Content-Type", "application/json;charset=UTF-8");

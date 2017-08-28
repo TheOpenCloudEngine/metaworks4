@@ -19,6 +19,7 @@ package org.metaworks.common.util;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.helpers.MessageFormatter;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -135,7 +136,7 @@ public class ResourceUtils {
      * @return 상응하는 {@link File} 객체
      * @throws FileNotFoundException 파일을 찾을 수 없는 경우
      */
-    public static File getFile(String resourceLocation) throws FileNotFoundException {
+    public static File getFile(String resourceLocation) throws FileNotFoundException, MalformedURLException {
         if (resourceLocation.startsWith(CLASSPATH_URL_PREFIX)) {
             String path = resourceLocation.substring(CLASSPATH_URL_PREFIX.length());
             String description = "CLASSPATH 리소스 [" + path + "]";
@@ -182,7 +183,7 @@ public class ResourceUtils {
      * @return 상응하는 {@link File} 객체
      * @throws FileNotFoundException 파일을 찾을 수 없는 경우
      */
-    public static File getFile(URL resourceUrl) throws FileNotFoundException {
+    public static File getFile(URL resourceUrl) throws FileNotFoundException, MalformedURLException {
         return getFile(resourceUrl, "URL");
     }
 
@@ -195,10 +196,14 @@ public class ResourceUtils {
      * @throws FileNotFoundException 파일을 찾을 수 없는 경우
      */
     @SuppressWarnings({"deprecation"})
-    public static File getFile(URL resourceUrl, String description) throws FileNotFoundException {
-        if (!URL_PROTOCOL_FILE.equals(resourceUrl.getProtocol())) {
-            String message = MessageFormatter.format("'{}' is not absolute path because does not exists.", description, resourceUrl).getMessage();
-            throw new FileNotFoundException(message);
+    public static File getFile(URL resourceUrl, String description) throws FileNotFoundException, MalformedURLException {
+        if (isJarURL(resourceUrl)) {
+            resourceUrl = extractJarFileURL(resourceUrl);
+        } else {
+            if (!URL_PROTOCOL_FILE.equals(resourceUrl.getProtocol())) {
+                String message = MessageFormatter.format("'{}' is not absolute path because does not exists.", description, resourceUrl).getMessage();
+                throw new FileNotFoundException(message);
+            }
         }
         return new File(URLDecoder.decode(resourceUrl.getFile()));
     }
@@ -314,5 +319,14 @@ public class ResourceUtils {
         byte[] bytes = new byte[size];
         inputStream.read(bytes);
         return bytes;
+    }
+
+    public static InputStream getSpringResourceInputStream(String resourcePath){
+        try{
+            return new ClassPathResource(resourcePath).getInputStream();
+        }catch (IOException ex){
+            ex.printStackTrace();
+            return null;
+        }
     }
 }
