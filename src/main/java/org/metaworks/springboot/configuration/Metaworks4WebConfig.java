@@ -8,6 +8,7 @@ import org.metaworks.iam.IamRestFilter;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
+import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
@@ -66,9 +67,12 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
     @Bean
     public MetadataService metadataService() {
-        CouchbaseMetadataService metadataService = new CouchbaseMetadataService();
-        metadataService.setCouchbaseServerIp("localhost");
-        metadataService.setBucketName("default");
+//        CouchbaseMetadataService metadataService = new CouchbaseMetadataService();
+//        metadataService.setCouchbaseServerIp("localhost");
+//        metadataService.setBucketName("default");
+
+        DefaultMetadataService metadataService = new DefaultMetadataService();
+        metadataService.setResourceManager(resourceManager());
 
         return metadataService;
     }
@@ -198,15 +202,15 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         };
     }
 
-    /**
-     * resources/application.properties 의 설정 및 시스템 환경변수 로깅
-     *
-     * @return VersionConfigurer
-     */
-    @Bean
-    public VersionConfigurer versionConfigurer() {
-        return new VersionConfigurer();
-    }
+//    /**
+//     * resources/application.properties 의 설정 및 시스템 환경변수 로깅
+//     *
+//     * @return VersionConfigurer
+//     */
+//    @Bean
+//    public VersionConfigurer versionConfigurer() {
+//        return new VersionConfigurer();
+//    }
 
     /**
      * 스프링 부트 어플리케이션콘텍스트를 static 으로 사용가능하게 제공.
@@ -219,14 +223,14 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
     }
 
 
-    /**
-     * Iam Rest Proxy. 화면의 IAM 요청을 클라이언트키, 시크릿 키를 헤더에 포함시켜 프락시 통신한다.
-     * Order = 0
-     *
-     * @return
-     */
-    @Bean
-    public IamRestFilter iamRestFilter() {
-        return new IamRestFilter();
-    }
+//    /**
+//     * Iam Rest Proxy. 화면의 IAM 요청을 클라이언트키, 시크릿 키를 헤더에 포함시켜 프락시 통신한다.
+//     * Order = 0
+//     *
+//     * @return
+//     */
+//    @Bean
+//    public IamRestFilter iamRestFilter() {
+//        return new IamRestFilter();
+//    }
 }
