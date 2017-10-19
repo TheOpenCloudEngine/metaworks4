@@ -2,9 +2,7 @@ package org.metaworks.springboot.configuration;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.RestAggregator;
-import org.metaworks.common.util.ApplicationContextRegistry;
-import org.metaworks.common.util.VersionConfigurer;
-import org.metaworks.iam.IamRestFilter;
+import org.metaworks.common.ApplicationContextRegistry;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.CouchbaseMetadataService;
@@ -43,15 +41,9 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //        converters.add(new GsonHttpMessageConverter());
 //    }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-
-        registry.addMapping("/**")
-                .allowedOrigins("*")
-                .maxAge(3600)
-                .allowedMethods("POST", "GET", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("access_token", "Content-Type", "x-requested-with", "Origin", "accept",
-                        "authorization", "Location");
+    @Bean
+    public CorsFilter corsFilter() {
+        return new CorsFilter();
     }
 
     @Bean
@@ -202,16 +194,6 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         };
     }
 
-//    /**
-//     * resources/application.properties 의 설정 및 시스템 환경변수 로깅
-//     *
-//     * @return VersionConfigurer
-//     */
-//    @Bean
-//    public VersionConfigurer versionConfigurer() {
-//        return new VersionConfigurer();
-//    }
-
     /**
      * 스프링 부트 어플리케이션콘텍스트를 static 으로 사용가능하게 제공.
      *
@@ -222,15 +204,4 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         return new ApplicationContextRegistry();
     }
 
-
-//    /**
-//     * Iam Rest Proxy. 화면의 IAM 요청을 클라이언트키, 시크릿 키를 헤더에 포함시켜 프락시 통신한다.
-//     * Order = 0
-//     *
-//     * @return
-//     */
-//    @Bean
-//    public IamRestFilter iamRestFilter() {
-//        return new IamRestFilter();
-//    }
 }
