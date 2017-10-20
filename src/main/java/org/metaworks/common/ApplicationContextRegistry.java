@@ -1,4 +1,4 @@
-package org.metaworks.common.util;
+package org.metaworks.common;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
