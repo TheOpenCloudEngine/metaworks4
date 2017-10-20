@@ -14,7 +14,6 @@ import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.text.ParseException;
 
 /**
  * Created by uengine on 2017. 6. 12..
@@ -22,6 +21,26 @@ import java.text.ParseException;
 @WebFilter
 //@Component
 public class TenantAwareFilter implements Filter {
+
+    public TenantAwareFilter(){
+        setAllowAnonymousTenant(true);
+    }
+
+    boolean allowAnonymousTenant;
+        public boolean isAllowAnonymousTenant() {
+            return allowAnonymousTenant;
+        }
+        /**
+         *
+         * @param allowAnonymousTenant
+         * enable anonymously accessing tenant that doesn't have any token information access. for testing or some purposes.
+         */
+        public void setAllowAnonymousTenant(boolean allowAnonymousTenant) {
+            this.allowAnonymousTenant = allowAnonymousTenant;
+        }
+
+
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
 
@@ -60,13 +79,20 @@ public class TenantAwareFilter implements Filter {
                 //TODO:
                 //throw new RuntimeException("Invalid login ", e);
 
-                filterChain.doFilter(servletRequest, servletResponse);
+                if(isAllowAnonymousTenant()){
+                    new TenantContext("anonymous");
+                    TenantContext.getThreadLocalInstance().setUserId("anonymous");
 
-                return;
+                    filterChain.doFilter(servletRequest, servletResponse);
+
+                    return;
+                }else{
+                    throw new ServletException("Invalid Access: No tenant information", e);
+                }
+
             }
 
             new TenantContext(tenantId);
-
             TenantContext.getThreadLocalInstance().setUserId(userName);
 
             //Provide spring security context
