@@ -1,26 +1,22 @@
 package org.metaworks.springboot.configuration;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
-import org.metaworks.annotation.RestAggregator;
+import org.metaworks.annotation.RestAssociation;
 import org.metaworks.common.ApplicationContextRegistry;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
-import org.metaworks.multitenancy.CouchbaseMetadataService;
 import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
 import org.springframework.hateoas.*;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.uengine.modeling.resource.CachedResourceManager;
@@ -129,7 +125,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
             @Override
             public Resource<?> process(Resource<?> resource) {
                 // additional processing only for entities that have rest resources
-                if (true || resource.getContent().getClass().isAnnotationPresent(RestAggregator.class)) {
+                if (true || resource.getContent().getClass().isAnnotationPresent(RestAssociation.class)) {
                     Map<String, String> links = new HashMap<String, String>();
 
                     // process any fields that have the RestResourceMapper annotation
@@ -137,7 +133,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                     for (Field field : fields) {
 
-                        RestAggregator restResourceMapper = field.getAnnotation(RestAggregator.class);
+                        RestAssociation restResourceMapper = field.getAnnotation(RestAssociation.class);
 
                         if (restResourceMapper != null && resource.getId() != null) {
                             String resourceId = resource.getId().getRel();

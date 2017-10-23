@@ -1,25 +1,14 @@
 package org.metaworks.multitenancy.persistence;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import org.eclipse.persistence.annotations.Multitenant;
 import org.eclipse.persistence.annotations.TenantDiscriminatorColumn;
-import org.metaworks.ObjectInstance;
-import org.metaworks.WebObjectType;
 import org.metaworks.annotation.Hidden;
-import org.metaworks.annotation.RestAggregator;
-import org.metaworks.dwr.MetaworksRemoteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.metaworks.annotation.RestAssociation;
 import org.springframework.stereotype.Component;
-import org.uengine.modeling.resource.DefaultResource;
-import org.uengine.modeling.resource.IResource;
-import org.uengine.modeling.resource.ResourceManager;
 
 import javax.persistence.Column;
 import javax.persistence.Transient;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by uengine on 2017. 7. 6..
@@ -43,7 +32,7 @@ public class MultitenantEntity implements Serializable {
 
 
     @Transient
-    @RestAggregator(
+    @RestAssociation(
             path="/metadata/{{entity.name}}/{{@id}}", role="mongodb"
     )
     TenantProperties tenantProperties;
