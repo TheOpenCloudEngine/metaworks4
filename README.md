@@ -4,6 +4,7 @@ Metaworks 4 is a progressive enterprise web framework that promotes POJO-based d
 ## Resources
 
 - homepage: http://www.metaworks4.io
+- CRM example : https://github.com/TheOpenCloudEngine/mw4-example-crm
 - Auto insurance example : https://github.com/jinyoung/sw-modeling-example
 - Manufacture system example : https://github.com/TheOpenCloudEngine/micro-service-architecture-vuejs
 - Wiki : https://github.com/TheOpenCloudEngine/metaworks4/wiki
