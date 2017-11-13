@@ -37,10 +37,10 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //        converters.add(new GsonHttpMessageConverter());
 //    }
 
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter();
-    }
+//    @Bean
+//    public CorsFilter corsFilter() {
+//        return new CorsFilter();
+//    }
 
     @Bean
     public ResourceManager resourceManager() {
