@@ -1,8 +1,10 @@
 package org.metaworks.springboot.configuration;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
+import org.metaworks.annotation.AddMetadataLink;
 import org.metaworks.annotation.RestAssociation;
 import org.metaworks.common.ApplicationContextRegistry;
+import org.metaworks.dwr.MetaworksRemoteService;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.DefaultMetadataService;
@@ -16,7 +18,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
+import org.springframework.data.rest.webmvc.PersistentEntityResource;
+import org.springframework.data.rest.webmvc.RepositoryLinksResource;
 import org.springframework.hateoas.*;
+import org.springframework.hateoas.core.EmbeddedWrapper;
+import org.springframework.hateoas.core.EmbeddedWrappers;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.uengine.modeling.resource.CachedResourceManager;
@@ -27,6 +33,9 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 @EnableWebMvc
 @ComponentScan(basePackageClasses = {/*TenantAwareFilter.class,*/ MetaworksRestService.class, ClassManager.class, MetadataService.class})
@@ -120,10 +129,61 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //    EntityLinks entityLinks;
 
     @Bean
-    public ResourceProcessor<Resource<?>> resourceProcessor() {
+    public ResourceProcessor<Resources<Resource<?>>> resourceProcessorForAddingMetadata() {
+        return new MetadataResourceProcessor();
+    }
+
+//    @Bean
+//    public ResourceProcessor<RepositoryLinksResource> resourceProcessorFor(){
+//        return new ResourceProcessor<RepositoryLinksResource>() {
+//            @Override
+//            public RepositoryLinksResource process(RepositoryLinksResource repositoryLinksResource) {
+//                return repositoryLinksResource;
+//            }
+//        };
+//    }
+
+
+    private class MetadataResourceProcessor implements ResourceProcessor<Resources<Resource<?>>> {
+        @Override
+        public Resources<Resource<?>> process(Resources<Resource<?>> resources) {
+
+            Object contentElem = ((java.util.Collection)resources.getContent()).iterator().next();
+
+            Class entityType;
+
+            if(contentElem instanceof EmbeddedWrapper){
+                entityType = ((EmbeddedWrapper)contentElem).getRelTargetType();
+
+            }else{
+                entityType = ((PersistentEntityResource)contentElem).getContent().getClass();
+            }
+
+
+            // if there @AddMetadataLink present, add for metadata service link
+            if (entityType.isAnnotationPresent(AddMetadataLink.class)) {
+                try {
+                    resources.add(linkTo(
+                            methodOn(MetaworksRestService.class)
+                                    .getClassDefinition(
+                                            entityType.getName()
+                                    )
+                    ).withRel("metadata"));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return resources;
+        }
+    }
+
+    @Bean
+    public ResourceProcessor<Resource<?>> resourceProcessorForRestAssociation() {
         return new ResourceProcessor<Resource<?>>() {
             @Override
             public Resource<?> process(Resource<?> resource) {
+
                 // additional processing only for entities that have rest resources
                 if (true || resource.getContent().getClass().isAnnotationPresent(RestAssociation.class)) {
                     Map<String, String> links = new HashMap<String, String>();
