@@ -4,6 +4,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.AddMetadataLink;
 import org.metaworks.annotation.RestAssociation;
 import org.metaworks.common.ApplicationContextRegistry;
+import org.metaworks.dwr.MetaworksRemoteService;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.DefaultMetadataService;
@@ -127,9 +128,6 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //        return ret;
 //    }
 
-    @Autowired
-    EntityLinks entityLinks;
-
     @Bean
     public ResourceProcessor<Resources<Resource<?>>> resourceProcessorForAddingMetadata() {
         return new MetadataResourceProcessor();
@@ -199,14 +197,14 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                     for (Field field : fields) {
 
-                        RestAssociation restResourceMapper = field.getAnnotation(RestAssociation.class);
+                        RestAssociation restAssociation = field.getAnnotation(RestAssociation.class);
 
-                        if (restResourceMapper != null && resource.getId() != null) {
+                        if (restAssociation != null && resource.getId() != null) {
                             String resourceId = resource.getId().getRel();
 
                             if (resourceId != null) {
                                 // construct a REST endpoint URL from the annotation properties and entity id
-                                String path = restResourceMapper.path();
+                                String path = restAssociation.path();
 
 
 //                                path = path.replaceAll("\\{\\{entity.name\\}\\}", entity.getContent().getClass().getSimpleName().toLowerCase());
@@ -216,12 +214,16 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                                 path = evaluatePath(path, resource.getContent());
 
+                                if(!path.startsWith("/")) path = "/" + path;
+
                                 try {
                                     URL resourceURL;
                                     Class entityClass = resource.getContent().getClass();
                                     //use HATEOAS LinkBuilder to get the right host and port for constructing the appropriate entity link
 
-                                    if ("self".equals(restResourceMapper.serviceId())) {
+                                    if ("self".equals(restAssociation.serviceId())) {
+
+                                        EntityLinks entityLinks = MetaworksRemoteService.getInstance().getComponent(EntityLinks.class);
 
                                         LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
                                         URL selfURL = new URL(linkBuilder.withSelfRel().getHref());
@@ -230,13 +232,16 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                                                 selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
                                         );
                                     }else
-                                    if (restResourceMapper.serviceId().startsWith("http")) {
+                                    if (restAssociation.serviceId().startsWith("http")) {
                                         resourceURL = new URL(
-                                                restResourceMapper.serviceId() + path
+                                                restAssociation.serviceId() + path
                                         );
                                     } else { //find by serviceId name from the eureka!
 
-                                        ServiceInstance serviceInstance=loadBalancer.choose("employee-producer");
+                                        ServiceInstance serviceInstance=loadBalancer.choose(restAssociation.serviceId());
+
+                                        if(serviceInstance==null) throw new Exception("Service for service Id "+ restAssociation.serviceId() + " is not found from Loadbalancer (Ribbon tried from Eureka).");
+
                                         String baseUrl=serviceInstance.getUri().toString();
 
                                         resourceURL = new URL(
@@ -270,41 +275,43 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
     public String evaluatePath(String expression, Object entity){
 
-        SpelExpressionParser expressionParser = new SpelExpressionParser();
+        try {
 
-        int pos;
-        int oldpos = 0;
-        int endpos;
-        String key;
-        StringBuffer generating = new StringBuffer();
+            SpelExpressionParser expressionParser = new SpelExpressionParser();
 
-        StandardEvaluationContext context = new StandardEvaluationContext();
-        context.setRootObject(entity);
-        context.setVariable("tenant", TenantContext.getThreadLocalInstance());
+            int pos;
+            int oldpos = 0;
+            int endpos;
+            String key;
+            StringBuffer generating = new StringBuffer();
+
+            StandardEvaluationContext context = new StandardEvaluationContext();
+            context.setRootObject(entity);
+            context.setVariable("tenant", TenantContext.getThreadLocalInstance());
 
 
-        while((pos = expression.indexOf(starter, oldpos)) > -1){
-            pos += starter.length();
-            endpos = expression.indexOf(ending, pos);
+            while ((pos = expression.indexOf(starter, oldpos)) > -1) {
+                pos += starter.length();
+                endpos = expression.indexOf(ending, pos);
 
-            if(endpos > pos){
-                generating.append(expression.substring(oldpos, pos - starter.length()));
-                key = expression.substring(pos, endpos);
-//                if(key.startsWith("=")) key = key.substring(1, key.length());
-//                if(key.startsWith("*")) key = key.substring(1, key.length());
-//                if(key.startsWith("+")) key = key.substring(1, key.length());
+                if (endpos > pos) {
+                    generating.append(expression.substring(oldpos, pos - starter.length()));
+                    key = expression.substring(pos, endpos);
 
-                key = key.trim();
+                    key = key.trim();
 
-                Object val = expressionParser.parseExpression(key).getValue(context);
+                    Object val = expressionParser.parseExpression(key).getValue(context);
 
-                if(val!=null)
-                    generating.append("" + val);
+                    if (val != null)
+                        generating.append("" + val);
+                }
+                oldpos = endpos + ending.length();
             }
-            oldpos = endpos + ending.length();
-        }
 
-        return generating.toString();
+            return generating.toString();
+        }catch(Exception e){
+            throw new RuntimeException("Error to parse expression " + expression, e);
+        }
 
 
     }

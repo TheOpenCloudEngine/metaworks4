@@ -33,7 +33,7 @@ public class MultitenantEntity implements Serializable {
 
     @Transient
     @RestAssociation(
-            path="/metadata/{{entity.name}}/{{@id}}", role="mongodb"
+            path="/metadata/{{entity.name}}/{{@id}}", serviceId="mongodb"
     )
     TenantProperties tenantProperties;
         public TenantProperties getTenantProperties() {
