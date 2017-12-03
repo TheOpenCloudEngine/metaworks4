@@ -4,7 +4,6 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.AddMetadataLink;
 import org.metaworks.annotation.RestAssociation;
 import org.metaworks.common.ApplicationContextRegistry;
-import org.metaworks.dwr.MetaworksRemoteService;
 import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.DefaultMetadataService;
@@ -12,17 +11,20 @@ import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
 import org.springframework.data.rest.webmvc.PersistentEntityResource;
-import org.springframework.data.rest.webmvc.RepositoryLinksResource;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.core.EmbeddedWrapper;
-import org.springframework.hateoas.core.EmbeddedWrappers;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.uengine.modeling.resource.CachedResourceManager;
@@ -125,8 +127,8 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 //        return ret;
 //    }
 
-//    @Autowired
-//    EntityLinks entityLinks;
+    @Autowired
+    EntityLinks entityLinks;
 
     @Bean
     public ResourceProcessor<Resources<Resource<?>>> resourceProcessorForAddingMetadata() {
@@ -178,6 +180,10 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
         }
     }
 
+    @Autowired
+    private LoadBalancerClient loadBalancer;
+
+
     @Bean
     public ResourceProcessor<Resource<?>> resourceProcessorForRestAssociation() {
         return new ResourceProcessor<Resource<?>>() {
@@ -199,39 +205,48 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                             String resourceId = resource.getId().getRel();
 
                             if (resourceId != null) {
-                                // construct a REST endpoint URL from the annotation properties and resource id
+                                // construct a REST endpoint URL from the annotation properties and entity id
                                 String path = restResourceMapper.path();
 
 
-                                path = path.replaceAll("\\{\\{entity.name\\}\\}", resource.getContent().getClass().getSimpleName().toLowerCase());
-                                path = path.replaceAll("\\{\\{tenantId\\}\\}", TenantContext.getThreadLocalInstance().getTenantId());
-                                path = path.replaceAll("\\{\\{\\@id\\}\\}", resource.getContent().toString());
+//                                path = path.replaceAll("\\{\\{entity.name\\}\\}", entity.getContent().getClass().getSimpleName().toLowerCase());
+//                                path = path.replaceAll("\\{\\{tenantId\\}\\}", TenantContext.getThreadLocalInstance().getTenantId());
+//                                path = path.replaceAll("\\{\\{\\@id\\}\\}", entity.getContent().toString());
+
+
+                                path = evaluatePath(path, resource.getContent());
 
                                 try {
                                     URL resourceURL;
                                     Class entityClass = resource.getContent().getClass();
-                                    //use HATEOAS LinkBuilder to get the right host and port for constructing the appropriate resource link
-                                    //LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
-                                    URL selfURL = new URL("http://localhost");//linkBuilder.withSelfRel().getHref());
+                                    //use HATEOAS LinkBuilder to get the right host and port for constructing the appropriate entity link
 
-                                    if ("self".equals(restResourceMapper.role())) {
+                                    if ("self".equals(restResourceMapper.serviceId())) {
+
+                                        LinkBuilder linkBuilder = entityLinks.linkFor(entityClass);
+                                        URL selfURL = new URL(linkBuilder.withSelfRel().getHref());
+
                                         resourceURL = new URL(
                                                 selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
                                         );
-                                    }
-                                    if (restResourceMapper.role().startsWith("http")) {
+                                    }else
+                                    if (restResourceMapper.serviceId().startsWith("http")) {
                                         resourceURL = new URL(
-                                                restResourceMapper.role() + path
+                                                restResourceMapper.serviceId() + path
                                         );
-                                    } else {
+                                    } else { //find by serviceId name from the eureka!
+
+                                        ServiceInstance serviceInstance=loadBalancer.choose("employee-producer");
+                                        String baseUrl=serviceInstance.getUri().toString();
+
                                         resourceURL = new URL(
-                                                selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
+                                                baseUrl + path
                                         );
                                     }
 
                                     links.put(field.getName(), resourceURL.toString());
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    throw new RuntimeException("Error when to add @RestAssociation link", e);
                                 }
                             }
 
@@ -248,6 +263,50 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                 return resource;
             }
         };
+    }
+
+    static final String starter = "{";
+    static final String ending = "}";
+
+    public String evaluatePath(String expression, Object entity){
+
+        SpelExpressionParser expressionParser = new SpelExpressionParser();
+
+        int pos;
+        int oldpos = 0;
+        int endpos;
+        String key;
+        StringBuffer generating = new StringBuffer();
+
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        context.setRootObject(entity);
+        context.setVariable("tenant", TenantContext.getThreadLocalInstance());
+
+
+        while((pos = expression.indexOf(starter, oldpos)) > -1){
+            pos += starter.length();
+            endpos = expression.indexOf(ending, pos);
+
+            if(endpos > pos){
+                generating.append(expression.substring(oldpos, pos - starter.length()));
+                key = expression.substring(pos, endpos);
+//                if(key.startsWith("=")) key = key.substring(1, key.length());
+//                if(key.startsWith("*")) key = key.substring(1, key.length());
+//                if(key.startsWith("+")) key = key.substring(1, key.length());
+
+                key = key.trim();
+
+                Object val = expressionParser.parseExpression(key).getValue(context);
+
+                if(val!=null)
+                    generating.append("" + val);
+            }
+            oldpos = endpos + ending.length();
+        }
+
+        return generating.toString();
+
+
     }
 
     /**
