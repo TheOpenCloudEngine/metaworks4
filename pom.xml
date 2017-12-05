@@ -17,7 +17,7 @@
 
 	<properties>
 		<!-- Java -->
-		<java.version>1.8</java.version>
+		<java.version>1.7</java.version>
 	</properties>
 
 	<dependencyManagement>
