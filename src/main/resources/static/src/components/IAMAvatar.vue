@@ -6,7 +6,7 @@
         <md-avatar class="md-large">
           <!--<img src="https://placeimg.com/64/64/people/8" alt="People">-->
           <img
-            :src="window.iam.baseUrl + '/rest/v1/avatar?userName='+ user.userName"
+            :src="iam.baseUrl + '/rest/v1/avatar?userName='+ user.userName"
             v-if="user.userName"
             alt="People">
         </md-avatar>
@@ -31,7 +31,7 @@
               <md-card-area md-inset>
                 <md-card-media md-ratio="16:9">
                   <img
-                    :src="window.iam.baseUrl + '/rest/v1/avatar?userName='+ user.userName"
+                    :src="iam.baseUrl + '/rest/v1/avatar?userName='+ user.userName"
                     v-if="user.userName"
                     alt="User Image">
                 </md-card-media>
@@ -44,7 +44,7 @@
                   <div>Email : {{user.email}}</div>
                   <div>Name : {{user.name}}</div>
                 </md-card-content>
-                <avatar-uploader :iam="iam"></avatar-uploader>
+                <avatar-uploader></avatar-uploader>
                 <md-button @click="logout">로그아웃</md-button>
               </md-card-area>
             </md-card>
@@ -65,10 +65,11 @@
     name:'iam-avatar',
 
     props: {
-      iam: Object,
+
     },
     data: function () {
       return {
+        iam: window.iam,
         user: {
 //          username : "",
 //          email : "",
@@ -79,7 +80,7 @@
     watch: {},
     mounted() {
       var me = this;
-      me.iam.getUser(localStorage['userId']).then(function (response) {
+      this.iam.getUser(localStorage['userName']).then(function (response) {
         me.user = response;
       })
 
