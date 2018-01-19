@@ -40,6 +40,14 @@ public class TenantAwareFilter implements Filter {
         }
 
 
+    boolean devMode;
+        public boolean isDevMode() {
+            return devMode;
+        }
+        public void setDevMode(boolean devMode) {
+            this.devMode = devMode;
+        }
+
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -50,6 +58,26 @@ public class TenantAwareFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         //String token = ((HttpServletRequest)servletRequest).getParameter("access_token");
         HttpServletRequest request = (HttpServletRequest) servletRequest;
+
+        if(isDevMode()){
+            String userName = ((HttpServletRequest) servletRequest).getHeader("access_token");
+
+            try {
+                String tenantId = userName.split("@")[1];
+
+                new TenantContext(tenantId);
+                TenantContext.getThreadLocalInstance().setUserId(userName);
+
+                filterChain.doFilter(servletRequest, servletResponse);
+
+                return;
+            }catch(Exception e) {
+                anonymousAccess(servletRequest, servletResponse, filterChain, e);
+                return;
+            }
+        }
+
+
         if (request.getMethod().equals(HttpMethod.OPTIONS.toString())) {
             filterChain.doFilter(servletRequest, servletResponse);
         } else {
@@ -79,16 +107,7 @@ public class TenantAwareFilter implements Filter {
                 //TODO:
                 //throw new RuntimeException("Invalid login ", e);
 
-                if(isAllowAnonymousTenant()){
-                    new TenantContext("anonymous");
-                    TenantContext.getThreadLocalInstance().setUserId("anonymous");
-
-                    filterChain.doFilter(servletRequest, servletResponse);
-
-                    return;
-                }else{
-                    throw new ServletException("Invalid Access: No tenant information", e);
-                }
+                anonymousAccess(servletRequest, servletResponse, filterChain, e);
 
             }
 
@@ -102,6 +121,19 @@ public class TenantAwareFilter implements Filter {
 
 
             filterChain.doFilter(servletRequest, servletResponse);
+        }
+    }
+
+    private void anonymousAccess(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Exception e) throws IOException, ServletException {
+        if (isAllowAnonymousTenant()) {
+            new TenantContext("anonymous");
+            TenantContext.getThreadLocalInstance().setUserId("anonymous");
+
+            filterChain.doFilter(servletRequest, servletResponse);
+
+            return;
+        } else {
+            throw new ServletException("Invalid Access: No tenant information", e);
         }
     }
 

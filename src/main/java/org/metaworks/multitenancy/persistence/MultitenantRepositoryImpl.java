@@ -1,13 +1,17 @@
 package org.metaworks.multitenancy.persistence;
 
 import javax.persistence.EntityManager;
+import javax.persistence.JoinColumn;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import org.metaworks.FieldDescriptor;
 import org.metaworks.ObjectInstance;
+import org.metaworks.WebFieldDescriptor;
 import org.metaworks.WebObjectType;
+import org.metaworks.annotation.RestAssociation;
 import org.metaworks.dwr.MetaworksRemoteService;
 import org.metaworks.springboot.configuration.Metaworks4BaseApplication;
 import org.oce.garuda.multitenancy.TenantContext;
@@ -20,13 +24,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
+import org.springframework.data.rest.core.event.ExceptionEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.uengine.modeling.resource.DefaultResource;
 import org.uengine.modeling.resource.IResource;
 import org.uengine.modeling.resource.ResourceManager;
+import org.uengine.util.UEngineUtil;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -132,6 +140,7 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 
     public void beforeSave(MultitenantEntity multitenantEntity) {
 
+        System.out.println();
 
 //        try {
 //            if(multitenantEntity.getProps_()!=null){
@@ -189,6 +198,58 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 
         if(entity instanceof MultitenantEntity){
             beforeSave((MultitenantEntity) entity);
+        }
+
+        if (true || entity.getClass().isAnnotationPresent(RestAssociation.class)) {
+            Field[] fields = entity.getClass().getDeclaredFields();
+
+            for (Field field : fields) {
+
+                RestAssociation restAssociation = field.getAnnotation(RestAssociation.class);
+
+                if (restAssociation != null ) {
+                    String joinColumnName = restAssociation.joinColumn();
+
+                    if(UEngineUtil.isNotEmpty(joinColumnName))
+                    try {
+                        Object joinFieldValue = null;
+
+                        try {
+                            joinFieldValue = field.get(entity);
+                        }catch (Exception ex){}
+
+                        if(joinFieldValue == null){
+                            try {
+                                joinFieldValue = entity.getClass().getMethod("get" + field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1)).invoke(entity, new Object[]{});
+                            }catch (Exception ex){}
+                        }
+
+                        if(joinFieldValue!=null) {
+
+                            WebObjectType webObjectType = MetaworksRemoteService.getInstance().getMetaworksType(field.getType().getName());
+                            WebFieldDescriptor fieldDescriptor = webObjectType.getKeyFieldDescriptor();
+                            String joinFieldPrimaryKey = fieldDescriptor.getName();
+
+                            Object joinFieldIdValue = joinFieldValue.getClass()
+                                    .getMethod("get" + joinFieldPrimaryKey.substring(0,1).toUpperCase() + joinFieldPrimaryKey.substring(1))
+                                    .invoke(joinFieldValue);
+
+                            if(joinFieldIdValue!=null) {
+                                entity.getClass()
+                                        .getMethod("set" + joinColumnName.substring(0, 1).toUpperCase() + joinColumnName.substring(1), new Class[]{joinFieldIdValue.getClass()})
+                                        .invoke(entity, new Object[]{joinFieldIdValue});
+                            }
+                        }
+
+//                    } catch (IllegalAccessException e) {
+//                        throw new RuntimeException("Failed to get id value from rest join column: " + entity.getClass() +"."+ field.getName(), e);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException("Failed to set @RestAssociation data: Be sure a setter method for '" + restAssociation.joinColumn() + "' present.", e);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to get id value from rest join column: " + entity.getClass() +"."+ field.getName(), e);
+                    }
+                }
+            }
         }
 
         return super.save(entity);

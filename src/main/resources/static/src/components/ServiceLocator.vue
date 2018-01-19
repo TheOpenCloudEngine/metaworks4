@@ -5,7 +5,7 @@
 
 <script>
   export default {
-    name: 'ServiceLocator',
+    name: 'service-locator',
 
     props: {
       host: String,

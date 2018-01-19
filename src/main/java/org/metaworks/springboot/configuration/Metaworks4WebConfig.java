@@ -1,5 +1,12 @@
 package org.metaworks.springboot.configuration;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerBuilder;
+import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.metaworks.annotation.AddMetadataLink;
 import org.metaworks.annotation.RestAssociation;
@@ -10,6 +17,7 @@ import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
+import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,21 +28,35 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.mapping.PersistentEntity;
+import org.springframework.data.mapping.PersistentProperty;
+import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.repository.query.spi.EvaluationContextExtension;
+import org.springframework.data.repository.support.RepositoryInvokerFactory;
+import org.springframework.data.rest.core.UriToEntityConverter;
 import org.springframework.data.rest.webmvc.PersistentEntityResource;
+import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
+import org.springframework.data.rest.webmvc.json.PersistentEntityJackson2Module;
+import org.springframework.data.rest.webmvc.mapping.Associations;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.core.EmbeddedWrapper;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.uengine.modeling.resource.CachedResourceManager;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Storage;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -43,7 +65,141 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 @EnableWebMvc
 @ComponentScan(basePackageClasses = {/*TenantAwareFilter.class,*/ MetaworksRestService.class, ClassManager.class, MetadataService.class})
 @EnableJpaRepositories(repositoryBaseClass = MultitenantRepositoryImpl.class)
-public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
+public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration {// RepositoryRestConfigurerAdapter {
+
+//    public static ObjectMapper jpaMapper;
+
+//    @Override
+//    public void configureJacksonObjectMapper(ObjectMapper objectMapper) {
+//        //jpaMapper = objectMapper.registerModule(new JavaTimeModule());
+//    }
+
+
+    protected Module persistentEntityJackson2Module() {
+        PersistentEntities entities = this.persistentEntities();
+        DefaultFormattingConversionService conversionService = this.defaultConversionService();
+        UriToEntityConverter uriToEntityConverter = this.uriToEntityConverter(conversionService);
+        RepositoryInvokerFactory repositoryInvokerFactory = this.repositoryInvokerFactory(conversionService);
+//        EmbeddedResourcesAssembler assembler = new EmbeddedResourcesAssembler(entities, this.associationLinks(), this.excerptProjector());
+//        PersistentEntityJackson2Module.LookupObjectSerializer lookupObjectSerializer = new PersistentEntityJackson2Module.LookupObjectSerializer(OrderAwarePluginRegistry.create(this.getEntityLookups()));
+        //       return new PersistentEntityJackson2Module(this.associationLinks(), entities, uriToEntityConverter, this.linkCollector(), repositoryInvokerFactory, lookupObjectSerializer, this.resourceProcessorInvoker(), assembler);
+
+        PersistentEntityJackson2Module module = (PersistentEntityJackson2Module) super.persistentEntityJackson2Module();
+        module.setDeserializerModifier(new AssociationUriResolvingDeserializerModifier_(entities, this.associationLinks(), uriToEntityConverter, repositoryInvokerFactory));
+//        this.setDeserializerModifier(new PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier(entities, associations, converter, factory));
+
+        return module;
+    }
+
+
+    public class AssociationUriResolvingDeserializerModifier_ extends PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier {
+        PersistentEntities entities;
+
+        public AssociationUriResolvingDeserializerModifier_(PersistentEntities entities, Associations associationLinks, UriToEntityConverter converter, RepositoryInvokerFactory factory) {
+            super(entities, associationLinks, converter, factory);
+
+            this.entities = entities;
+        }
+
+        public BeanDeserializerBuilder updateBuilder(DeserializationConfig config, BeanDescription beanDesc, BeanDeserializerBuilder builder) {
+
+            builder = super.updateBuilder(config, beanDesc, builder);
+
+            Iterator properties = builder.getProperties();
+            PersistentEntity entity = this.entities.getPersistentEntity(beanDesc.getBeanClass());
+
+            if(entity != null) {
+                PersistentProperty idProperty = entity.getIdProperty();
+
+//                if(idProperty!=null){
+
+                while(properties.hasNext()) {
+                    SettableBeanProperty property = (SettableBeanProperty)properties.next();
+                    //PersistentProperty persistentProperty = entity.getPersistentProperty(property.getName());
+                    JsonDeserializer deserializer;
+
+                    if(property.getAnnotation(RestAssociation.class)!=null) {
+                        deserializer = new RestAssociationUriStringDeserializer(property, entities);//, beanDesc, idProperty);
+                        builder.addOrReplaceProperty(property.withValueDeserializer(deserializer), false);
+                    }
+                }
+
+                return builder;
+                //              }
+            }
+
+            return builder;
+
+        }
+
+    }
+
+    public class RestAssociationUriStringDeserializer extends StdDeserializer<Object> {
+        private static final long serialVersionUID = -2175900204153350125L;
+        private static final String UNEXPECTED_VALUE = "Expected URI cause property %s points to the managed domain type!";
+        private final SettableBeanProperty property;
+        PersistentEntities entities;
+//        private final BeanDescription beanDescription;
+//        PersistentProperty idProperty;
+
+        public RestAssociationUriStringDeserializer(SettableBeanProperty property, PersistentEntities entities){//, BeanDescription beanDescription, PersistentProperty idProperty) {
+            super(property.getType());
+            this.property = property;
+//            this.beanDescription = beanDescription;
+//            this.idProperty = idProperty;
+
+            this.entities = entities;
+        }
+
+        public Object deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            String source = jp.getValueAsString();
+            if(!StringUtils.hasText(source)) {
+                return null;
+            } else {
+                try {
+                    URI uri = (new UriTemplate(source)).expand(new Object[0]);
+
+                    String[] pathElements = uri.getPath().split("/");
+                    String lastPathElement = pathElements[pathElements.length-1];
+
+                    PersistentEntity entity = this.entities.getPersistentEntity(this.property.getType().getRawClass());
+
+                    PersistentProperty idProperty = entity.getIdProperty();
+
+                    Object idValue = null;
+                    if(String.class.equals(idProperty.getType())){
+                        idValue = lastPathElement.trim();
+                    }else if(Long.class.equals(idProperty.getType())) {
+                        idValue = Long.valueOf(lastPathElement);
+                    }
+
+                    if(idValue!=null){
+                        Object bean = property.getType().getRawClass().newInstance();
+                        idProperty.getSetter().invoke(bean, new Object[]{idValue});
+
+                        return bean;
+                    }else{
+                        return null;
+                    }
+                    //return this.converter.convert(o_O, PersistentEntityJackson2Module.URI_DESCRIPTOR, typeDescriptor);
+                } catch (IllegalArgumentException var6) {
+                    throw ctxt.weirdStringException(source, URI.class, String.format("Expected URI cause property %s points to the managed domain type!", new Object[]{this.property}));
+                } catch (IllegalAccessException e) {
+                    throw ctxt.weirdStringException(source, URI.class, String.format("URI for property %s can't converted to domain type! detail: %s", new Object[]{this.property, e.getMessage()}));
+                } catch (InvocationTargetException e) {
+                    throw ctxt.weirdStringException(source, URI.class, String.format("URI for property %s can't converted to domain type!", new Object[]{this.property}));
+                } catch (InstantiationException e) {
+                    throw ctxt.weirdStringException(source, URI.class, String.format("URI for property %s can't converted to domain type!", new Object[]{this.property}));
+
+                }
+            }
+        }
+
+        public Object deserializeWithType(JsonParser jp, DeserializationContext ctxt, TypeDeserializer typeDeserializer) throws IOException {
+            return this.deserialize(jp, ctxt);
+        }
+    }
+
 //    @Override
 //    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
 //        converters.add(new GsonHttpMessageConverter());
@@ -214,6 +370,8 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                                 path = evaluatePath(path, resource.getContent());
 
+                                if(path==null) continue;
+
                                 if(!path.startsWith("/")) path = "/" + path;
 
                                 try {
@@ -229,7 +387,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                                         URL selfURL = new URL(linkBuilder.withSelfRel().getHref());
 
                                         resourceURL = new URL(
-                                                selfURL.getProtocol() + "://" + selfURL.getHost() + ":" + selfURL.getPort() + path
+                                                selfURL.getProtocol() + "://" + selfURL.getHost() + (selfURL.getPort() > -1 ? ":" + selfURL.getPort() : "") + path
                                         );
                                     }else
                                     if (restAssociation.serviceId().startsWith("http")) {
@@ -256,11 +414,12 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                             }
 
                         }
-                        // add any additional links to the output
-                        for (String linkResourceName : links.keySet()) {
-                            resource.add(new Link(links.get(linkResourceName), linkResourceName));
-                        }
 
+                    }
+
+                    // add any additional links to the output
+                    for (String linkResourceName : links.keySet()) {
+                        resource.add(new Link(links.get(linkResourceName), linkResourceName));
                     }
 
                 }
@@ -275,6 +434,7 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
     public String evaluatePath(String expression, Object entity){
 
+        boolean allIsNull = true;
         try {
 
             SpelExpressionParser expressionParser = new SpelExpressionParser();
@@ -300,7 +460,13 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
 
                     key = key.trim();
 
-                    Object val = expressionParser.parseExpression(key).getValue(context);
+                    Object val = null;
+
+                    try {
+                        val = expressionParser.parseExpression(key).getValue(context);
+                        allIsNull = false;
+                    }catch(Exception e){
+                    }
 
                     if (val != null)
                         generating.append("" + val);
@@ -308,7 +474,8 @@ public abstract class Metaworks4WebConfig extends WebMvcConfigurerAdapter {
                 oldpos = endpos + ending.length();
             }
 
-            return generating.toString();
+            return allIsNull ? null : generating.toString();
+
         }catch(Exception e){
             throw new RuntimeException("Error to parse expression " + expression, e);
         }

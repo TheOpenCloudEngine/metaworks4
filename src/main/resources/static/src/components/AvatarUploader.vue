@@ -30,7 +30,8 @@
 
 <script>
   export default {
-      name: 'iam-avatar-uploader',
+    name:'avatar-uploader',
+
     props: {
       iam: Object,
     },
