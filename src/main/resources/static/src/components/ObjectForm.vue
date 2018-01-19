@@ -22,7 +22,7 @@
 
 <script>
   export default {
-      name: 'object-form',
+      name:'object-form',
     props: {
       java: String,
       classDefinition: Object,
@@ -32,7 +32,8 @@
       options: Object,
       checked: Object,
       pNo: String,
-      serviceLocator: Object
+      serviceLocator: Object,
+      backend: Object
     },
 
     watch: {
@@ -60,6 +61,11 @@
           }
 
         } else {
+
+            if(this.backend){
+              return this.backend.$bind.ref;
+            }
+
           return "http://127.0.0.1:8080"
         }
       },

@@ -30,10 +30,8 @@
 
 <script>
   export default {
-      name: 'iam-avatar-uploader',
-    props: {
-      iam: Object,
-    },
+    name: 'avatar-uploader',
+    props: {},
 
     watch: {
       taskId: function (val) {
@@ -43,6 +41,7 @@
 
     data: function () {
       return {
+        iam: window.iam,
         dialog: false,
         file: null
       }
@@ -60,7 +59,7 @@
       },
       upload: function () {
         var me = this;
-        this.iam.createUserAvatarByFormData(me.file, me.file.type, null, localStorage['username'])
+        this.iam.createUserAvatarByFormData(me.file, me.file.type, localStorage['userName'])
           .done(function () {
             me.$root.$children[0].success('사진이 업로드 되었습니다.');
             me.closeDialog('dialog1');
