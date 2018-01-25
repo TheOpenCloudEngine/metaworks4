@@ -108,7 +108,7 @@ public class TenantAwareFilter implements Filter {
                 //throw new RuntimeException("Invalid login ", e);
 
                 anonymousAccess(servletRequest, servletResponse, filterChain, e);
-
+                return;
             }
 
             new TenantContext(tenantId);

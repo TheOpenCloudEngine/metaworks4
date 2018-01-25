@@ -18,6 +18,7 @@ import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -94,7 +95,14 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 //        return this.findOne(this.isRemovedByID(pk));
         getEntityManager().setProperty("tenant-id", TenantContext.getThreadLocalInstance().getTenantId());
 
-        return super.findOne(pk);
+        E s = super.findOne(pk);
+
+        if(s!=null && s instanceof AfterLoadOne){
+            ((AfterLoadOne) s).afterLoadOne();
+        }
+
+        return s;
+
     }
 
 //    private Specification<E> isRemoved() {
@@ -315,6 +323,28 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
         return this.entityInformation;
     }
 
+    ////// findOne will conver followings all:
 
+//    @Override
+//    public <S extends E> S findOne(Example<S> example) {
+//        S s = super.findOne(example);
+//
+//        if(s instanceof AfterLoadOne){
+//            ((AfterLoadOne) s).afterLoadOne();
+//        }
+//
+//        return s;
+//    }
+//
+//    @Override
+//    public E getOne(PK pk) {
+//        E s = super.getOne(pk);
+//
+//        if(s instanceof AfterLoadOne){
+//            ((AfterLoadOne) s).afterLoadOne();
+//        }
+//
+//        return s;
+//    }
 
 }

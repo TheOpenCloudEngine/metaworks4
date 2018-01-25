@@ -16,6 +16,7 @@ import org.metaworks.iam.SecurityEvaluationContextExtension;
 import org.metaworks.multitenancy.ClassManager;
 import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
+import org.metaworks.multitenancy.persistence.AfterLoadOne;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
 import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.rest.MetaworksRestService;
@@ -256,6 +257,9 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
         JpaProperties propertiesMap = new JpaProperties();
         propertiesMap.getProperties().put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.CREATE_OR_EXTEND);
         propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
+        propertiesMap.getProperties().put("hibernate.hbm2ddl.auto", "create");
+
+
         //propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
         //LOGGING_LEVEL
 
@@ -347,6 +351,11 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                 // additional processing only for entities that have rest resources
                 if (true || resource.getContent().getClass().isAnnotationPresent(RestAssociation.class)) {
                     Map<String, String> links = new HashMap<String, String>();
+
+                    //TODO: why are you live in here?
+                    if(resource.getContent() instanceof AfterLoadOne){
+                        ((AfterLoadOne) resource.getContent()).afterLoadOne();
+                    }
 
                     // process any fields that have the RestResourceMapper annotation
                     Field[] fields = resource.getContent().getClass().getDeclaredFields();
@@ -450,6 +459,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
             context.setVariable("tenant", TenantContext.getThreadLocalInstance());
 
 
+            //TODO: change to a major template engine such as Grunt which supports SpEL
             while ((pos = expression.indexOf(starter, oldpos)) > -1) {
                 pos += starter.length();
                 endpos = expression.indexOf(ending, pos);
@@ -466,6 +476,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                         val = expressionParser.parseExpression(key).getValue(context);
                         allIsNull = false;
                     }catch(Exception e){
+                        throw e;
                     }
 
                     if (val != null)
@@ -473,6 +484,8 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                 }
                 oldpos = endpos + ending.length();
             }
+
+            generating.append(expression.substring(oldpos));
 
             return allIsNull ? null : generating.toString();
 

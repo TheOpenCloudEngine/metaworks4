@@ -21,10 +21,10 @@ import java.util.Map;
 public class Metaworks4EventSourcingConfig {
 
     @Value("${kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    protected String bootstrapServers;
 
-    @Value("${kafka.consumer.topicKey}")
-    private String topicKey;
+    @Value("${kafka.consumer-topic}")
+    protected String topicKey;
 
     @Bean
     public Map<String, Object> producerConfigs() {
