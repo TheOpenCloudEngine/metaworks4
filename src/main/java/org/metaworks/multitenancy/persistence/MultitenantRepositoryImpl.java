@@ -252,7 +252,7 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
 //                    } catch (IllegalAccessException e) {
 //                        throw new RuntimeException("Failed to get id value from rest join column: " + entity.getClass() +"."+ field.getName(), e);
                     } catch (NoSuchMethodException e) {
-                        throw new RuntimeException("Failed to set @RestAssociation data: Be sure a setter method for '" + restAssociation.joinColumn() + "' present.", e);
+                        throw new RuntimeException("Failed to set @RestAssociation data: Be sure a setter method for '" + restAssociation.joinColumn() + "' (with same parameter type with the foreign key) present.", e);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to get id value from rest join column: " + entity.getClass() +"."+ field.getName(), e);
                     }
@@ -275,6 +275,10 @@ public class MultitenantRepositoryImpl<E, PK extends Serializable> extends
             if(entity instanceof AfterLoad) {
                 ((AfterLoad) entity).afterLoad();
             }
+
+//            if(entity instanceof AfterLoadOne) {
+//                ((AfterLoadOne) entity).afterLoadOne();
+//            }
 
             if(entity instanceof MultitenantEntity){
                 afterLoad((MultitenantEntity) entity);
