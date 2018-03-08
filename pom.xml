@@ -156,6 +156,17 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- ribbon-discovery-filter -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-feign</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.jmnarloch</groupId>
+			<artifactId>ribbon-discovery-filter-spring-cloud-starter</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+
 
 	</dependencies>
 

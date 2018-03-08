@@ -18,6 +18,7 @@ import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.AfterLoadOne;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
+import org.metaworks.multitenancy.ribbonfilter.FeignRequestInterceptor;
 import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
@@ -109,17 +110,17 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
             Iterator properties = builder.getProperties();
             PersistentEntity entity = this.entities.getPersistentEntity(beanDesc.getBeanClass());
 
-            if(entity != null) {
+            if (entity != null) {
                 PersistentProperty idProperty = entity.getIdProperty();
 
 //                if(idProperty!=null){
 
-                while(properties.hasNext()) {
-                    SettableBeanProperty property = (SettableBeanProperty)properties.next();
+                while (properties.hasNext()) {
+                    SettableBeanProperty property = (SettableBeanProperty) properties.next();
                     //PersistentProperty persistentProperty = entity.getPersistentProperty(property.getName());
                     JsonDeserializer deserializer;
 
-                    if(property.getAnnotation(RestAssociation.class)!=null) {
+                    if (property.getAnnotation(RestAssociation.class) != null) {
                         deserializer = new RestAssociationUriStringDeserializer(property, entities);//, beanDesc, idProperty);
                         builder.addOrReplaceProperty(property.withValueDeserializer(deserializer), false);
                     }
@@ -143,7 +144,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 //        private final BeanDescription beanDescription;
 //        PersistentProperty idProperty;
 
-        public RestAssociationUriStringDeserializer(SettableBeanProperty property, PersistentEntities entities){//, BeanDescription beanDescription, PersistentProperty idProperty) {
+        public RestAssociationUriStringDeserializer(SettableBeanProperty property, PersistentEntities entities) {//, BeanDescription beanDescription, PersistentProperty idProperty) {
             super(property.getType());
             this.property = property;
 //            this.beanDescription = beanDescription;
@@ -154,32 +155,32 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
         public Object deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
             String source = jp.getValueAsString();
-            if(!StringUtils.hasText(source)) {
+            if (!StringUtils.hasText(source)) {
                 return null;
             } else {
                 try {
                     URI uri = (new UriTemplate(source)).expand(new Object[0]);
 
                     String[] pathElements = uri.getPath().split("/");
-                    String lastPathElement = pathElements[pathElements.length-1];
+                    String lastPathElement = pathElements[pathElements.length - 1];
 
                     PersistentEntity entity = this.entities.getPersistentEntity(this.property.getType().getRawClass());
 
                     PersistentProperty idProperty = entity.getIdProperty();
 
                     Object idValue = null;
-                    if(String.class.equals(idProperty.getType())){
+                    if (String.class.equals(idProperty.getType())) {
                         idValue = lastPathElement.trim();
-                    }else if(Long.class.equals(idProperty.getType())) {
+                    } else if (Long.class.equals(idProperty.getType())) {
                         idValue = Long.valueOf(lastPathElement);
                     }
 
-                    if(idValue!=null){
+                    if (idValue != null) {
                         Object bean = property.getType().getRawClass().newInstance();
                         idProperty.getSetter().invoke(bean, new Object[]{idValue});
 
                         return bean;
-                    }else{
+                    } else {
                         return null;
                     }
                     //return this.converter.convert(o_O, PersistentEntityJackson2Module.URI_DESCRIPTOR, typeDescriptor);
@@ -308,15 +309,15 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
         @Override
         public Resources<Resource<?>> process(Resources<Resource<?>> resources) {
 
-            Object contentElem = ((java.util.Collection)resources.getContent()).iterator().next();
+            Object contentElem = ((java.util.Collection) resources.getContent()).iterator().next();
 
             Class entityType;
 
-            if(contentElem instanceof EmbeddedWrapper){
-                entityType = ((EmbeddedWrapper)contentElem).getRelTargetType();
+            if (contentElem instanceof EmbeddedWrapper) {
+                entityType = ((EmbeddedWrapper) contentElem).getRelTargetType();
 
-            }else{
-                entityType = ((PersistentEntityResource)contentElem).getContent().getClass();
+            } else {
+                entityType = ((PersistentEntityResource) contentElem).getContent().getClass();
             }
 
 
@@ -353,7 +354,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                     Map<String, String> links = new HashMap<String, String>();
 
                     //TODO: why are you live in here?
-                    if(resource.getContent() instanceof AfterLoadOne){
+                    if (resource.getContent() instanceof AfterLoadOne) {
                         ((AfterLoadOne) resource.getContent()).afterLoadOne();
                     }
 
@@ -379,9 +380,9 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
                                 path = evaluatePath(path, resource.getContent());
 
-                                if(path==null) continue;
+                                if (path == null) continue;
 
-                                if(!path.startsWith("/")) path = "/" + path;
+                                if (!path.startsWith("/")) path = "/" + path;
 
                                 try {
                                     URL resourceURL;
@@ -398,18 +399,18 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                                         resourceURL = new URL(
                                                 selfURL.getProtocol() + "://" + selfURL.getHost() + (selfURL.getPort() > -1 ? ":" + selfURL.getPort() : "") + path
                                         );
-                                    }else
-                                    if (restAssociation.serviceId().startsWith("http")) {
+                                    } else if (restAssociation.serviceId().startsWith("http")) {
                                         resourceURL = new URL(
                                                 restAssociation.serviceId() + path
                                         );
                                     } else { //find by serviceId name from the eureka!
 
-                                        ServiceInstance serviceInstance=loadBalancer.choose(restAssociation.serviceId());
+                                        ServiceInstance serviceInstance = loadBalancer.choose(restAssociation.serviceId());
 
-                                        if(serviceInstance==null) throw new Exception("Service for service Id "+ restAssociation.serviceId() + " is not found from Loadbalancer (Ribbon tried from Eureka).");
+                                        if (serviceInstance == null)
+                                            throw new Exception("Service for service Id " + restAssociation.serviceId() + " is not found from Loadbalancer (Ribbon tried from Eureka).");
 
-                                        String baseUrl=serviceInstance.getUri().toString();
+                                        String baseUrl = serviceInstance.getUri().toString();
 
                                         resourceURL = new URL(
                                                 baseUrl + path
@@ -441,7 +442,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
     static final String starter = "{";
     static final String ending = "}";
 
-    public String evaluatePath(String expression, Object entity){
+    public String evaluatePath(String expression, Object entity) {
 
         boolean allIsNull = true;
         try {
@@ -475,7 +476,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                     try {
                         val = expressionParser.parseExpression(key).getValue(context);
                         allIsNull = false;
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         throw e;
                     }
 
@@ -489,7 +490,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
             return allIsNull ? null : generating.toString();
 
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("Error to parse expression " + expression, e);
         }
 
@@ -506,4 +507,14 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
         return new ApplicationContextRegistry();
     }
 
+
+    /**
+     * feignRequestInterceptor(Ribbon filter)
+     *
+     * @return FeignRequestInterceptor
+     */
+    @Bean
+    public FeignRequestInterceptor feignRequestInterceptor() {
+        return new FeignRequestInterceptor();
+    }
 }
