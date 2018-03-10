@@ -1,43 +1,31 @@
 package org.metaworks.multitenancy.persistence;
 
 import javax.persistence.EntityManager;
-import javax.persistence.JoinColumn;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-import org.metaworks.FieldDescriptor;
 import org.metaworks.ObjectInstance;
 import org.metaworks.WebFieldDescriptor;
 import org.metaworks.WebObjectType;
 import org.metaworks.annotation.RestAssociation;
 import org.metaworks.dwr.MetaworksRemoteService;
-import org.metaworks.springboot.configuration.Metaworks4BaseApplication;
 import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
-import org.springframework.data.rest.core.event.ExceptionEvent;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.uengine.modeling.resource.DefaultResource;
-import org.uengine.modeling.resource.IResource;
-import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.util.UEngineUtil;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 @Transactional

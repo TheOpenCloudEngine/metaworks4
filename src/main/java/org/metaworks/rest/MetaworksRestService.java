@@ -259,7 +259,7 @@ public class MetaworksRestService{
     }
 
 
-    @RequestMapping(value = "/classdefinition", method = RequestMethod.GET)
+    @RequestMapping(value = "/classdefinition", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
     public ClassDefinition getClassDefinition(@RequestParam(value="className", defaultValue="") String className) throws Exception{
 
         if(TransactionContext.getThreadLocalInstance()==null)

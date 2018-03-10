@@ -64,11 +64,15 @@
 
         xhr.onload = function () {
 
+          if(xhr.status == 200)
           try{
             var data = JSON.parse(xhr.responseText);
             context.success(data);
           }catch (e){
             context.success(xhr.responseText);
+          }
+          else{
+            context.fail(xhr.responseText);
           }
         }
         xhr.send(context.data ? JSON.stringify(context.data) : null);

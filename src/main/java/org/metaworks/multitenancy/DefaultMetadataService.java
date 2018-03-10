@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by uengine on 2017. 5. 7..
@@ -72,7 +73,7 @@ public class DefaultMetadataService implements MetadataService {
 
         //load class definition in the original form (java) first
         ClassDefinition classDefinition = (new ClassDefinition());
-        List<Attribute> attributeList = new ArrayList<Attribute>();
+        List<WebFieldDescriptor> attributeList = new ArrayList<>();
         {
             WebObjectType webObjectType = MetaworksRemoteService.getInstance().getMetaworksType(className);
 
@@ -108,9 +109,9 @@ public class DefaultMetadataService implements MetadataService {
             ClassDefinition overriderClassDefinition = (ClassDefinition) getResourceManager().getObject(resource);
 
             if(overriderClassDefinition.getFieldDescriptors()!=null)
-                for(Attribute attribute : overriderClassDefinition.getFieldDescriptors()){
+                for(WebFieldDescriptor attribute : overriderClassDefinition.getFieldDescriptors()){
                     if(!attributeList.contains(attribute)){
-                        attribute.setAttributes(new HashMap<String, Object>());
+                        attribute.setAttributes(new Properties());
                         attribute.getAttributes().put("extended", "true");
                         attributeList.add(attribute);
                         if(attribute.getDisplayName()==null || attribute.getDisplayName().trim().length()==0)

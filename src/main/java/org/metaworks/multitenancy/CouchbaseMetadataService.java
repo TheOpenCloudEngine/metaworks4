@@ -18,6 +18,7 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by uengine on 2017. 5. 7..
@@ -161,7 +162,7 @@ public class CouchbaseMetadataService implements MetadataService {
         if(overriderClassDefinition.getFieldDescriptors()!=null)
         for(Attribute attribute : overriderClassDefinition.getFieldDescriptors()){
             if(!attributeList.contains(attribute)){
-                attribute.setAttributes(new HashMap<String, Object>());
+                attribute.setAttributes(new Properties());
                 attribute.getAttributes().put("extended", "true");
                 attributeList.add(attribute);
                 if(attribute.getDisplayName()==null || attribute.getDisplayName().trim().length()==0)
