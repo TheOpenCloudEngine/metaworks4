@@ -82,6 +82,8 @@ public class TenantAwareFilter implements Filter {
             filterChain.doFilter(servletRequest, servletResponse);
         } else {
             String token = ((HttpServletRequest) servletRequest).getHeader("access_token");
+            //Use for add token FeignRequestInterceptor.java request template.
+            new TokenContext(token);
 
             //java 처리 후
             String jwt = token;
