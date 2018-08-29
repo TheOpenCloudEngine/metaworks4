@@ -18,17 +18,18 @@ import org.metaworks.multitenancy.DefaultMetadataService;
 import org.metaworks.multitenancy.MetadataService;
 import org.metaworks.multitenancy.persistence.AfterLoadOne;
 import org.metaworks.multitenancy.persistence.MultitenantRepositoryImpl;
-import org.metaworks.multitenancy.ribbonfilter.FeignRequestInterceptor;
-import org.metaworks.multitenancy.tenantawarefilter.TenantAwareFilter;
 import org.metaworks.rest.MetaworksRestService;
 import org.oce.garuda.multitenancy.TenantContext;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
@@ -60,6 +61,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
@@ -76,20 +78,17 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 //        //jpaMapper = objectMapper.registerModule(new JavaTimeModule());
 //    }
 
+    public Metaworks4WebConfig(ApplicationContext context, ObjectFactory<ConversionService> conversionService) {
+        super(context, conversionService);
+    }
 
     protected Module persistentEntityJackson2Module() {
         PersistentEntities entities = this.persistentEntities();
         DefaultFormattingConversionService conversionService = this.defaultConversionService();
         UriToEntityConverter uriToEntityConverter = this.uriToEntityConverter(conversionService);
         RepositoryInvokerFactory repositoryInvokerFactory = this.repositoryInvokerFactory(conversionService);
-//        EmbeddedResourcesAssembler assembler = new EmbeddedResourcesAssembler(entities, this.associationLinks(), this.excerptProjector());
-//        PersistentEntityJackson2Module.LookupObjectSerializer lookupObjectSerializer = new PersistentEntityJackson2Module.LookupObjectSerializer(OrderAwarePluginRegistry.create(this.getEntityLookups()));
-        //       return new PersistentEntityJackson2Module(this.associationLinks(), entities, uriToEntityConverter, this.linkCollector(), repositoryInvokerFactory, lookupObjectSerializer, this.resourceProcessorInvoker(), assembler);
-
         PersistentEntityJackson2Module module = (PersistentEntityJackson2Module) super.persistentEntityJackson2Module();
         module.setDeserializerModifier(new AssociationUriResolvingDeserializerModifier_(entities, this.associationLinks(), uriToEntityConverter, repositoryInvokerFactory));
-//        this.setDeserializerModifier(new PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier(entities, associations, converter, factory));
-
         return module;
     }
 
@@ -99,7 +98,6 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
         public AssociationUriResolvingDeserializerModifier_(PersistentEntities entities, Associations associationLinks, UriToEntityConverter converter, RepositoryInvokerFactory factory) {
             super(entities, associationLinks, converter, factory);
-
             this.entities = entities;
         }
 
@@ -108,12 +106,10 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
             builder = super.updateBuilder(config, beanDesc, builder);
 
             Iterator properties = builder.getProperties();
-            PersistentEntity entity = this.entities.getPersistentEntity(beanDesc.getBeanClass());
+            PersistentEntity entity = this.entities.getPersistentEntity(beanDesc.getBeanClass()).get();
 
             if (entity != null) {
                 PersistentProperty idProperty = entity.getIdProperty();
-
-//                if(idProperty!=null){
 
                 while (properties.hasNext()) {
                     SettableBeanProperty property = (SettableBeanProperty) properties.next();
@@ -125,15 +121,10 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                         builder.addOrReplaceProperty(property.withValueDeserializer(deserializer), false);
                     }
                 }
-
                 return builder;
-                //              }
             }
-
             return builder;
-
         }
-
     }
 
     public class RestAssociationUriStringDeserializer extends StdDeserializer<Object> {
@@ -164,7 +155,7 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
                     String[] pathElements = uri.getPath().split("/");
                     String lastPathElement = pathElements[pathElements.length - 1];
 
-                    PersistentEntity entity = this.entities.getPersistentEntity(this.property.getType().getRawClass());
+                    PersistentEntity entity = this.entities.getPersistentEntity(this.property.getType().getRawClass()).get();
 
                     PersistentProperty idProperty = entity.getIdProperty();
 
@@ -202,16 +193,6 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
         }
     }
 
-//    @Override
-//    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-//        converters.add(new GsonHttpMessageConverter());
-//    }
-
-//    @Bean
-//    public CorsFilter corsFilter() {
-//        return new CorsFilter();
-//    }
-
     @Bean
     public ResourceManager resourceManager() {
         ResourceManager resourceManager = new CachedResourceManager();
@@ -225,31 +206,11 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
     @Bean
     public MetadataService metadataService() {
-//        CouchbaseMetadataService metadataService = new CouchbaseMetadataService();
-//        metadataService.setCouchbaseServerIp("localhost");
-//        metadataService.setBucketName("default");
-
         DefaultMetadataService metadataService = new DefaultMetadataService();
         metadataService.setResourceManager(resourceManager());
 
         return metadataService;
     }
-
-//    @Bean
-//    public DataSource dataSource() {
-//        //In classpath from spring-boot-starter-web
-//        final Properties pool = new Properties();
-//        pool.put("driverClassName", "com.mysql.jdbc.Driver");
-//        pool.put("url", "jdbc:mysql://localhost:3306/uengine?useUnicode=true&characterEncoding=UTF8&useOldAliasMetadataBehavior=true");
-//        pool.put("username", "root");
-//        pool.put("password", "");
-//        pool.put("minIdle", 1);
-//        try {
-//            return new org.apache.tomcat.jdbc.pool.DataSourceFactory().createDataSource(pool);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
 
     @Bean
     @Primary
@@ -259,10 +220,6 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
         propertiesMap.getProperties().put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.CREATE_OR_EXTEND);
         propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
         propertiesMap.getProperties().put("hibernate.hbm2ddl.auto", "create");
-
-
-        //propertiesMap.getProperties().put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
-        //LOGGING_LEVEL
 
         return propertiesMap;
     }
@@ -274,36 +231,10 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
     }
 
 
-//    @Bean
-//    public LocalContainerEntityManagerFactoryBean entityManagerFactory(final EntityManagerFactoryBuilder builder) {
-//        LocalContainerEntityManagerFactoryBean ret = null;
-//        try {
-//            ret = builder
-//                    .dataSource(dataSource())
-//                    .packages(Product.class.getPackage().getName())
-//                    .persistenceUnit("YourPersistenceUnitName")
-//                    .properties(initJpaProperties()).build();
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//        return ret;
-//    }
-
     @Bean
     public ResourceProcessor<Resources<Resource<?>>> resourceProcessorForAddingMetadata() {
         return new MetadataResourceProcessor();
     }
-
-//    @Bean
-//    public ResourceProcessor<RepositoryLinksResource> resourceProcessorFor(){
-//        return new ResourceProcessor<RepositoryLinksResource>() {
-//            @Override
-//            public RepositoryLinksResource process(RepositoryLinksResource repositoryLinksResource) {
-//                return repositoryLinksResource;
-//            }
-//        };
-//    }
-
 
     private class MetadataResourceProcessor implements ResourceProcessor<Resources<Resource<?>>> {
         @Override
@@ -497,24 +428,9 @@ public abstract class Metaworks4WebConfig extends RepositoryRestMvcConfiguration
 
     }
 
-    /**
-     * 스프링 부트 어플리케이션콘텍스트를 static 으로 사용가능하게 제공.
-     *
-     * @return ApplicationContextRegistry
-     */
     @Bean
     public ApplicationContextRegistry applicationContextRegistry() {
         return new ApplicationContextRegistry();
     }
 
-
-    /**
-     * feignRequestInterceptor(Ribbon filter)
-     *
-     * @return FeignRequestInterceptor
-     */
-    @Bean
-    public FeignRequestInterceptor feignRequestInterceptor() {
-        return new FeignRequestInterceptor();
-    }
 }

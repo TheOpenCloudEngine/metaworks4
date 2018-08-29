@@ -19,21 +19,25 @@ import org.uengine.uml.model.ClassDefinition;
 public class ClassManager {
 
     ClassDefinition classDefinition;
-        public ClassDefinition getClassDefinition() {
-            return classDefinition;
-        }
-        public void setClassDefinition(ClassDefinition classDefinition) {
-            this.classDefinition = classDefinition;
-        }
+
+    public ClassDefinition getClassDefinition() {
+        return classDefinition;
+    }
+
+    public void setClassDefinition(ClassDefinition classDefinition) {
+        this.classDefinition = classDefinition;
+    }
 
     String className;
+
     @Id
-        public String getClassName() {
-            return className;
-        }
-        public void setClassName(String className) {
-            this.className = className;
-        }
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
 
     @ServiceMethod(callByContent = true)
     public void save() throws Exception {
@@ -47,8 +51,8 @@ public class ClassManager {
         setClassDefinition(new ClassDefinition());
         classDefinition.setFieldDescriptors(new Attribute[webObjectType.getFieldDescriptors().length]);
 
-        int i=0;
-        for(WebFieldDescriptor fieldDescriptor : webObjectType.getFieldDescriptors()){
+        int i = 0;
+        for (WebFieldDescriptor fieldDescriptor : webObjectType.getFieldDescriptors()) {
 
             Attribute attribute = new Attribute();
             org.springframework.beans.BeanUtils.copyProperties(fieldDescriptor, attribute);
@@ -72,7 +76,5 @@ public class ClassManager {
 
         setClassDefinition(classDefinition);
     }
-
-
 
 }

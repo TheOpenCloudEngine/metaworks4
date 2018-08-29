@@ -35,38 +35,28 @@ import java.util.Set;
  * Created by uengine on 2017. 5. 21..
  */
 @RestController
-public class MetaworksRestService{
+public class MetaworksRestService {
 
     @PostConstruct
-    public void init(){
+    public void init() {
         System.out.println();
     }
 
-   // @CrossOrigin(origins = "*")
+    // @CrossOrigin(origins = "*")
     @RequestMapping("/metadata")
-    public WebObjectType getMetadata(@RequestParam(value="className", defaultValue="") String className) throws Exception {
-//
-//        InputStream inputStream = req.getInputStream();
-//        ByteArrayOutputStream bao = new ByteArrayOutputStream();
-//        try {
-//            MetaworksUtil.copyStream(inputStream, bao);
-//            Object inputObject = Boon.fromJson(bao.toString());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
+    public WebObjectType getMetadata(@RequestParam(value = "className", defaultValue = "") String className) throws Exception {
         return MetaworksRemoteService.getInstance().getMetaworksType(className);
     }
 
     @Autowired
     private ApplicationContext applicationContext;
 
-    private ApplicationContext getBeanFactory(){
+    private ApplicationContext getBeanFactory() {
         return applicationContext;
     }
 
     @RequestMapping(value = "/rpc", method = RequestMethod.POST)
-    public Object callMetaworksService(@RequestBody InvocationContext invocationContext) throws Throwable{
+    public Object callMetaworksService(@RequestBody InvocationContext invocationContext) throws Throwable {
 
 
         String objectTypeName = invocationContext.getObjectTypeName();
@@ -80,21 +70,21 @@ public class MetaworksRestService{
         //if the requested value object is IDAO which need to be converted to implemented one so that it can be invoked by its methods
         //Another case this required is when Spring is used since the spring base object should be auto-wiring operation
         ApplicationContext springAppContext = null;
-        if(TransactionalDwrServlet.useSpring) springAppContext = getBeanFactory();
+        if (TransactionalDwrServlet.useSpring) springAppContext = getBeanFactory();
         Object springBean = null;
-        if(springAppContext!=null)
-            try{
+        if (springAppContext != null)
+            try {
                 //springBean = getBeanFactory().getBean(serviceClass);
                 Map beanMap = springAppContext.getBeansOfType(serviceClass);
                 Set keys = beanMap.keySet();
                 for (Object key : keys) {
-                    if(springBean != null) {
+                    if (springBean != null) {
                         System.err.println("====== Warnning : MetaworksRemoteService.callMetaworksService get only one bean object of one class.");
                         break;
                     }
                     springBean = beanMap.get(key);
                 }
-            }catch(Exception e){
+            } catch (Exception e) {
                 //TODO: check if there's any occurrence of @Autowired in the field list, it is required to check and shows some WARNING to the developer.
             }
 
@@ -102,18 +92,18 @@ public class MetaworksRestService{
         //fireAfterConvertertedEvent(clientObject);  //disabled due to performance issue
 
 
-        if(serviceClass.isInterface() || springBean!=null){
+        if (serviceClass.isInterface() || springBean != null) {
             String serviceClassNameOnly = WebObjectType.getClassNameOnly(serviceClass);
 
-            if(serviceClass.isInterface()){
+            if (serviceClass.isInterface()) {
                 serviceClassNameOnly = serviceClassNameOnly.substring(1, serviceClassNameOnly.length());
                 serviceClass = Thread.currentThread().getContextClassLoader().loadClass(serviceClass.getPackage().getName() + "." + serviceClassNameOnly);
             }
 
-            if(springAppContext!=null)
-                try{
+            if (springAppContext != null)
+                try {
                     springBean = getBeanFactory().getBean(serviceClass);
-                }catch(Exception e){
+                } catch (Exception e) {
                     //TODO: check if there's any occurrence of @Autowired in the field list, it is required to check and shows some WARNING to the developer.
                 }
 
@@ -125,25 +115,25 @@ public class MetaworksRestService{
             srcInst.setObject(clientObject);
             ObjectInstance targetInst = (ObjectInstance) wot.metaworks2Type().createInstance();
 
-            if(springBean!=null){
+            if (springBean != null) {
                 targetInst.setObject(springBean);
             }
 
-            for(FieldDescriptor fd : wot.metaworks2Type().getFieldDescriptors()){
+            for (FieldDescriptor fd : wot.metaworks2Type().getFieldDescriptors()) {
                 Object srcFieldValue = srcInst.getFieldValue(fd.getName());
 
                 //MetaworksObject need to initialize the property MetaworksContext if there's no data.
-                if("MetaworksContext".equals(fd.getName()) && srcFieldValue==null && IDAO.class.isAssignableFrom(serviceClass)){
+                if ("MetaworksContext".equals(fd.getName()) && srcFieldValue == null && IDAO.class.isAssignableFrom(serviceClass)) {
                     srcFieldValue = new MetaworksContext();
                 }
 
                 boolean isSpringAutowiredField = false;
-                try{
-                    isSpringAutowiredField = ((serviceClass.getMethod( "get"+ fd.getName(), new Class[]{})).getAnnotation(Autowired.class) != null);
-                }catch(Exception e){
+                try {
+                    isSpringAutowiredField = ((serviceClass.getMethod("get" + fd.getName(), new Class[]{})).getAnnotation(Autowired.class) != null);
+                } catch (Exception e) {
                 }
 
-                if(!isSpringAutowiredField)
+                if (!isSpringAutowiredField)
                     targetInst.setFieldValue(fd.getName(), srcFieldValue);
             }
 
@@ -152,11 +142,11 @@ public class MetaworksRestService{
         }
 
         //injecting autowired fields from client
-        if(autowiredFields!=null){
-            for(String fieldName : autowiredFields.keySet()){
+        if (autowiredFields != null) {
+            for (String fieldName : autowiredFields.keySet()) {
                 Object autowiringValue = autowiredFields.get(fieldName);
 
-                if(!fieldName.startsWith(ServiceMethodContext.WIRE_PARAM_CLS)) //if the autowired field is not a @AutowiredFromClient in Parameterized call, means normal case in the field injection.
+                if (!fieldName.startsWith(ServiceMethodContext.WIRE_PARAM_CLS)) //if the autowired field is not a @AutowiredFromClient in Parameterized call, means normal case in the field injection.
                     serviceClass.getField(fieldName).set(clientObject, autowiringValue);
             }
         }
@@ -168,45 +158,44 @@ public class MetaworksRestService{
         ServiceMethodContext theSMC = null;
 
         WebObjectType wot = MetaworksRemoteService.getInstance().getMetaworksType(serviceClass.getName());
-        for(ServiceMethodContext smc: wot.getServiceMethodContexts()){ //TODO: [Performance] looking in array
-            if(smc.getMethodName().equals(methodName)){
+        for (ServiceMethodContext smc : wot.getServiceMethodContexts()) { //TODO: [Performance] looking in array
+            if (smc.getMethodName().equals(methodName)) {
                 theSMC = smc;
                 theMethod = smc._getMethod();
-                parameterizedInvoke = theSMC._getPayloadParameterIndexes()!=null && theSMC._getPayloadParameterIndexes().size() > 0;
+                parameterizedInvoke = theSMC._getPayloadParameterIndexes() != null && theSMC._getPayloadParameterIndexes().size() > 0;
             }
         }
-
 
 
 //		object = invocationContext.getObject();
 
         ///put autowiring objects all including the object from client itself.
         TransactionContext.getThreadLocalInstance().setAutowiringObjectsFromClient(autowiredFields);
-        if(TransactionContext.getThreadLocalInstance().getAutowiringObjectsFromClient()==null){
+        if (TransactionContext.getThreadLocalInstance().getAutowiringObjectsFromClient() == null) {
             TransactionContext.getThreadLocalInstance().setAutowiringObjectsFromClient(new HashMap());
         }
         TransactionContext.getThreadLocalInstance().getAutowiringObjectsFromClient().put("this", clientObject);
 
         //if we failed to find method by class name, just try to get the method from object directly.
-        if(theMethod == null && clientObject!=null)
+        if (theMethod == null && clientObject != null)
             theMethod = clientObject.getClass().getMethod(methodName, new Class[]{});
 
-        try{
+        try {
 
             Object[] parameters = new Object[theMethod.getParameterTypes().length];
-            if(parameterizedInvoke){
+            if (parameterizedInvoke) {
 
-                for(String key : theSMC._getPayloadParameterIndexes().keySet()){
+                for (String key : theSMC._getPayloadParameterIndexes().keySet()) {
                     int parameterIndex = theSMC._getPayloadParameterIndexes().get(key);
 
                     Object fieldValue = null;
-                    if(key.startsWith(ServiceMethodContext.WIRE_PARAM_CLS)){
+                    if (key.startsWith(ServiceMethodContext.WIRE_PARAM_CLS)) {
                         fieldValue = autowiredFields.get(key);
-                    }else{
-                        try{
+                    } else {
+                        try {
                             fieldValue = serviceClass.getMethod("get" + key.substring(0, 1).toUpperCase() + key.substring(1), new Class[]{}).invoke(clientObject, new Object[]{});
-                        }catch(Exception ex){
-                            throw new RuntimeException("Error when to get field ["+ key + "] value for calling parameterized metaworks call: @Payload('" + key + "')", ex);
+                        } catch (Exception ex) {
+                            throw new RuntimeException("Error when to get field [" + key + "] value for calling parameterized metaworks call: @Payload('" + key + "')", ex);
                         }
                     }
 
@@ -218,12 +207,12 @@ public class MetaworksRestService{
 
             Object returned = theMethod.invoke(clientObject, parameters);
 
-            if(theMethod.getReturnType()==void.class) //if void is return type, apply clientobject back to the browser.
+            if (theMethod.getReturnType() == void.class) //if void is return type, apply clientobject back to the browser.
                 returned = clientObject;
 
 
             Object wrappedReturn = TransactionContext.getThreadLocalInstance().getSharedContext("wrappedReturn");
-            if(wrappedReturn!=null)
+            if (wrappedReturn != null)
                 returned = wrappedReturn;
 
 // moved to MetaworksConverter
@@ -235,7 +224,7 @@ public class MetaworksRestService{
 
         } catch (InvocationTargetException e) {
             // TODO Auto-generated catch block
-            if(!(e.getTargetException() instanceof MetaworksException))
+            if (!(e.getTargetException() instanceof MetaworksException))
                 e.printStackTrace();
 
             throw e.getTargetException();
@@ -246,8 +235,8 @@ public class MetaworksRestService{
     ClassManager classManager;
 
     @RequestMapping(value = "/classdefinition", method = RequestMethod.POST)
-    public void putClassDefinition(@RequestBody ClassDefinition classDefinition) throws Exception{
-        if(TransactionContext.getThreadLocalInstance()==null)
+    public void putClassDefinition(@RequestBody ClassDefinition classDefinition) throws Exception {
+        if (TransactionContext.getThreadLocalInstance() == null)
             new TransactionContext();
 
         classManager.setClassName(classDefinition.getName());
@@ -260,9 +249,9 @@ public class MetaworksRestService{
 
 
     @RequestMapping(value = "/classdefinition", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
-    public ClassDefinition getClassDefinition(@RequestParam(value="className", defaultValue="") String className) throws Exception{
+    public ClassDefinition getClassDefinition(@RequestParam(value = "className", defaultValue = "") String className) throws Exception {
 
-        if(TransactionContext.getThreadLocalInstance()==null)
+        if (TransactionContext.getThreadLocalInstance() == null)
             new TransactionContext();
 
         classManager.setClassName(className);

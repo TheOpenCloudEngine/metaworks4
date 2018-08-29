@@ -6,6 +6,7 @@ import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.env.CouchbaseEnvironment;
 import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
+import lombok.Data;
 import org.boon.Boon;
 import org.metaworks.*;
 import org.metaworks.dwr.MetaworksRemoteService;
@@ -23,35 +24,20 @@ import java.util.Properties;
 /**
  * Created by uengine on 2017. 5. 7..
  */
+@Data
 public class CouchbaseMetadataService implements MetadataService {
     private String couchbaseServerIp;
     private String bucketPassword;
-
-    public String getCouchbaseServerIp() {
-            return couchbaseServerIp;
-        }
-        public void setCouchbaseServerIp(String couchbaseServerIp) {
-            this.couchbaseServerIp = couchbaseServerIp;
-        }
-
     String bucketName;
-        public String getBucketName() {
-            return bucketName;
-        }
-        public void setBucketName(String bucketName) {
-            this.bucketName = bucketName;
-        }
-
     CouchbaseCluster cluster;
 
-
-    protected Bucket getBucket(){
+    protected Bucket getBucket() {
         return cluster.openBucket(getBucketName(), getBucketPassword());
     }
 
 
     @Override
-    public <T> T getMetadata(Class<T> clazz, String tenantId) throws Exception{
+    public <T> T getMetadata(Class<T> clazz, String tenantId) throws Exception {
 
         String metadataClassName = clazz.getName();
 
@@ -62,34 +48,29 @@ public class CouchbaseMetadataService implements MetadataService {
         metadataInstance.setObject(metadata);
 
 
-        for(FieldDescriptor fieldDescriptor : webObjectType.metaworks2Type().getFieldDescriptors()){
+        for (FieldDescriptor fieldDescriptor : webObjectType.metaworks2Type().getFieldDescriptors()) {
             String key;
             key = createKey(tenantId, metadataClassName, fieldDescriptor.getName());
             JsonDocument document = getBucket().get(key);
 
-            if(document==null) continue;
+            if (document == null) continue;
 
             String json = document.content().getString("value");
 
-            try{
+            try {
                 Object object = Boon.fromJson(json, fieldDescriptor.getClassType());
 
                 metadataInstance.setFieldValue(fieldDescriptor.getName(), object);
-            }catch (Exception e){
+            } catch (Exception e) {
 
             }
-
-
         }
-
-
-
         return metadata;
 
     }
 
     @Override
-    public void setMetadata(Object metadata, String tenantId) throws Exception{
+    public void setMetadata(Object metadata, String tenantId) throws Exception {
 
         String metadataClassName = metadata.getClass().getName();
 
@@ -98,7 +79,7 @@ public class CouchbaseMetadataService implements MetadataService {
         ObjectInstance metadataInstance = (ObjectInstance) webObjectType.metaworks2Type().createInstance();
         metadataInstance.setObject(metadata);
 
-        for(FieldDescriptor fieldDescriptor : webObjectType.metaworks2Type().getFieldDescriptors()){
+        for (FieldDescriptor fieldDescriptor : webObjectType.metaworks2Type().getFieldDescriptors()) {
 
             Object value = metadataInstance.getFieldValue(fieldDescriptor.getName());
 
@@ -111,9 +92,7 @@ public class CouchbaseMetadataService implements MetadataService {
                     .put("value", json);
 
             JsonDocument stored = getBucket().upsert(JsonDocument.create(key, jsonObject));
-
         }
-
     }
 
     @Override
@@ -153,24 +132,24 @@ public class CouchbaseMetadataService implements MetadataService {
         String key = createKey(tenantId, clazz.getName(), "clsDef");
         JsonDocument document = getBucket().get(key);
 
-        if(document==null) return classDefinition;
+        if (document == null) return classDefinition;
 
         String xml = document.content().getString("value");
 
         ClassDefinition overriderClassDefinition = (ClassDefinition) Serializer.deserialize(xml);
 
-        if(overriderClassDefinition.getFieldDescriptors()!=null)
-        for(Attribute attribute : overriderClassDefinition.getFieldDescriptors()){
-            if(!attributeList.contains(attribute)){
-                attribute.setAttributes(new Properties());
-                attribute.getAttributes().put("extended", "true");
-                attributeList.add(attribute);
-                if(attribute.getDisplayName()==null || attribute.getDisplayName().trim().length()==0)
-                    attribute.setDisplayName(attribute.getName());
-            }else{
+        if (overriderClassDefinition.getFieldDescriptors() != null)
+            for (Attribute attribute : overriderClassDefinition.getFieldDescriptors()) {
+                if (!attributeList.contains(attribute)) {
+                    attribute.setAttributes(new Properties());
+                    attribute.getAttributes().put("extended", "true");
+                    attributeList.add(attribute);
+                    if (attribute.getDisplayName() == null || attribute.getDisplayName().trim().length() == 0)
+                        attribute.setDisplayName(attribute.getName());
+                } else {
 
+                }
             }
-        }
 
         Attribute[] attributes = new Attribute[attributeList.size()];
         attributeList.toArray(attributes);
@@ -192,7 +171,6 @@ public class CouchbaseMetadataService implements MetadataService {
     }
 
     private String createKey(String tenantId, String metadataClassName, String propertyName) {
-
         return "_md_" + tenantId + "_" + metadataClassName + "_" + propertyName;
     }
 
@@ -207,13 +185,5 @@ public class CouchbaseMetadataService implements MetadataService {
 
         cluster = CouchbaseCluster.create(env, getCouchbaseServerIp());
 
-    }
-
-    public void setBucketPassword(String bucketPassword) {
-        this.bucketPassword = bucketPassword;
-    }
-
-    public String getBucketPassword() {
-        return bucketPassword;
     }
 }

@@ -2,13 +2,10 @@ package org.metaworks.multitenancy.tenantawarefilter;
 
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jwt.JWTClaimsSet;
+import lombok.Data;
 import net.minidev.json.JSONObject;
 import org.oce.garuda.multitenancy.TenantContext;
 import org.springframework.http.HttpMethod;
-//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-//import org.springframework.security.core.context.SecurityContextHolder;
-//import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-//import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
@@ -19,35 +16,15 @@ import java.io.IOException;
  * Created by uengine on 2017. 6. 12..
  */
 @WebFilter
-//@Component
+@Data
 public class TenantAwareFilter implements Filter {
 
-    public TenantAwareFilter(){
+    public TenantAwareFilter() {
         setAllowAnonymousTenant(true);
     }
 
     boolean allowAnonymousTenant;
-        public boolean isAllowAnonymousTenant() {
-            return allowAnonymousTenant;
-        }
-        /**
-         *
-         * @param allowAnonymousTenant
-         * enable anonymously accessing tenant that doesn't have any token information access. for testing or some purposes.
-         */
-        public void setAllowAnonymousTenant(boolean allowAnonymousTenant) {
-            this.allowAnonymousTenant = allowAnonymousTenant;
-        }
-
-
     boolean devMode;
-        public boolean isDevMode() {
-            return devMode;
-        }
-        public void setDevMode(boolean devMode) {
-            this.devMode = devMode;
-        }
-
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -59,7 +36,7 @@ public class TenantAwareFilter implements Filter {
         //String token = ((HttpServletRequest)servletRequest).getParameter("access_token");
         HttpServletRequest request = (HttpServletRequest) servletRequest;
 
-        if(isDevMode()){
+        if (isDevMode()) {
             String userName = ((HttpServletRequest) servletRequest).getHeader("access_token");
 
             try {
@@ -71,7 +48,7 @@ public class TenantAwareFilter implements Filter {
                 filterChain.doFilter(servletRequest, servletResponse);
 
                 return;
-            }catch(Exception e) {
+            } catch (Exception e) {
                 anonymousAccess(servletRequest, servletResponse, filterChain, e);
                 return;
             }

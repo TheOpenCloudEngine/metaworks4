@@ -6,6 +6,7 @@ import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.env.CouchbaseEnvironment;
 import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
+import lombok.Data;
 import org.boon.Boon;
 import org.metaworks.FieldDescriptor;
 import org.metaworks.ObjectInstance;
@@ -29,20 +30,13 @@ import java.util.Properties;
 /**
  * Created by uengine on 2017. 5. 7..
  */
+@Data
 public class DefaultMetadataService implements MetadataService {
 
     ResourceManager resourceManager;
-        public ResourceManager getResourceManager() {
-            return resourceManager;
-        }
-        public void setResourceManager(ResourceManager resourceManager) {
-            this.resourceManager = resourceManager;
-        }
-
-
 
     @Override
-    public <T> T getMetadata(Class<T> clazz, String tenantId) throws Exception{
+    public <T> T getMetadata(Class<T> clazz, String tenantId) throws Exception {
 
         String metadataClassName = clazz.getName();
 
@@ -55,7 +49,7 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     @Override
-    public void setMetadata(Object metadata, String tenantId) throws Exception{
+    public void setMetadata(Object metadata, String tenantId) throws Exception {
 
         String metadataClassName = metadata.getClass().getName();
 
@@ -90,7 +84,7 @@ public class DefaultMetadataService implements MetadataService {
 
                 i++;
 
-                if(attribute.getAttributes()!=null)
+                if (attribute.getAttributes() != null)
                     attribute.getAttributes().remove("extended");
 
                 attributeList.add(attribute);
@@ -108,15 +102,15 @@ public class DefaultMetadataService implements MetadataService {
         try {
             ClassDefinition overriderClassDefinition = (ClassDefinition) getResourceManager().getObject(resource);
 
-            if(overriderClassDefinition.getFieldDescriptors()!=null)
-                for(WebFieldDescriptor attribute : overriderClassDefinition.getFieldDescriptors()){
-                    if(!attributeList.contains(attribute)){
+            if (overriderClassDefinition.getFieldDescriptors() != null)
+                for (WebFieldDescriptor attribute : overriderClassDefinition.getFieldDescriptors()) {
+                    if (!attributeList.contains(attribute)) {
                         attribute.setAttributes(new Properties());
                         attribute.getAttributes().put("extended", "true");
                         attributeList.add(attribute);
-                        if(attribute.getDisplayName()==null || attribute.getDisplayName().trim().length()==0)
+                        if (attribute.getDisplayName() == null || attribute.getDisplayName().trim().length() == 0)
                             attribute.setDisplayName(attribute.getName());
-                    }else{
+                    } else {
 
                     }
                 }
@@ -125,9 +119,9 @@ public class DefaultMetadataService implements MetadataService {
             attributeList.toArray(attributes);
             classDefinition.setFieldDescriptors(attributes);
 
-        }catch (FileNotFoundException fne){
+        } catch (FileNotFoundException fne) {
 
-        }catch (NullPointerException npe){
+        } catch (NullPointerException npe) {
 
         }
 

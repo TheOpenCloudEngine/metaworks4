@@ -12,9 +12,6 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
  */
 public class EventSender {
 
-//    @Autowired
-//    private KafkaTemplate<String, String> kafkaTemplate;
-
     public void sendBusinessEvent(String payload) {
         sendBusinessEvent(payload, new ListenableFutureCallback<SendResult<Integer, String>>() {
 
